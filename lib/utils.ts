@@ -67,16 +67,16 @@ export const formatDateTime = (dateString: Date) => {
 };
 
 export function formatAmount(amount: number): string {
-  const formatter = new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-KE", {
     style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
-
-  return formatter.format(amount);
+    currency: "KES",
+  }).format(amount);
 }
 
-export const parseStringify = (value: any) => JSON.parse(JSON.stringify(value));
+export const parseStringify = (value: any) => {
+  if (value === undefined || value === null) return null;
+  return JSON.parse(JSON.stringify(value));
+};
 
 export const removeSpecialCharacters = (value: string) => {
   return value.replace(/[^\w\s]/gi, "");
@@ -101,110 +101,10 @@ export function formUrlQuery({ params, key, value }: UrlQueryParams) {
     { skipNull: true }
   );
 }
-
-export function getAccountTypeColors(type: AccountTypes) {
-  switch (type) {
-    case "depository":
-      return {
-        bg: "bg-blue-25",
-        lightBg: "bg-blue-100",
-        title: "text-blue-900",
-        subText: "text-blue-700",
-      };
-
-    case "credit":
-      return {
-        bg: "bg-success-25",
-        lightBg: "bg-success-100",
-        title: "text-success-900",
-        subText: "text-success-700",
-      };
-
-    default:
-      return {
-        bg: "bg-green-25",
-        lightBg: "bg-green-100",
-        title: "text-green-900",
-        subText: "text-green-700",
-      };
-  }
-}
-
-export function countTransactionCategories(
-  transactions: Transaction[]
-): CategoryCount[] {
-  const categoryCounts: { [category: string]: number } = {};
-  let totalCount = 0;
-
-  // Iterate over each transaction
-  transactions &&
-    transactions.forEach((transaction) => {
-      // Extract the category from the transaction
-      const category = transaction.category;
-
-      // If the category exists in the categoryCounts object, increment its count
-      if (categoryCounts.hasOwnProperty(category)) {
-        categoryCounts[category]++;
-      } else {
-        // Otherwise, initialize the count to 1
-        categoryCounts[category] = 1;
-      }
-
-      // Increment total count
-      totalCount++;
-    });
-
-  // Convert the categoryCounts object to an array of objects
-  const aggregatedCategories: CategoryCount[] = Object.keys(categoryCounts).map(
-    (category) => ({
-      name: category,
-      count: categoryCounts[category],
-      totalCount,
-    })
-  );
-
-  // Sort the aggregatedCategories array by count in descending order
-  aggregatedCategories.sort((a, b) => b.count - a.count);
-
-  return aggregatedCategories;
-}
-
-export function extractCustomerIdFromUrl(url: string) {
-  // Split the URL string by '/'
-  const parts = url.split("/");
-
-  // Extract the last part, which represents the customer ID
-  const customerId = parts[parts.length - 1];
-
-  return customerId;
-}
-
-export function encryptId(id: string) {
-  return btoa(id);
-}
-
-export function decryptId(id: string) {
-  return atob(id);
-}
-
-export const getTransactionStatus = (date: Date) => {
-  const today = new Date();
-  const twoDaysAgo = new Date(today);
-  twoDaysAgo.setDate(today.getDate() - 2);
-
-  return date > twoDaysAgo ? "Processing" : "Success";
-};
-
 export const authFormSchema = (type: string) => z.object({
-  // sign up
-  firstName: type === 'sign-in' ? z.string().optional() : z.string().min(3),
-  lastName: type === 'sign-in' ? z.string().optional() : z.string().min(3),
-  address1: type === 'sign-in' ? z.string().optional() : z.string().max(50),
-  city: type === 'sign-in' ? z.string().optional() : z.string().max(50),
-  state: type === 'sign-in' ? z.string().optional() : z.string().min(2).max(2),
-  postalCode: type === 'sign-in' ? z.string().optional() : z.string().min(3).max(6),
-  dateOfBirth: type === 'sign-in' ? z.string().optional() : z.string().min(3),
-  ssn: type === 'sign-in' ? z.string().optional() : z.string().min(3),
+  // sign up only
+  firstName: type === 'sign-in' ? z.string().optional() : z.string().min(2),
+  lastName: type === 'sign-in' ? z.string().optional() : z.string().min(2),
   // both
   email: z.string().email(),
   password: z.string().min(8),

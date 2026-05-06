@@ -12,8 +12,8 @@ const ibmPlexSerif = IBM_Plex_Serif({
 })
 
 export const metadata: Metadata = {
-  title: "Horizon",
-  description: "Horizon is a modern banking platform for everyone.",
+  title: "El Elyon",
+  description: "El Elyon is a premium Loan Management System for modern lenders.",
   icons: {
     icon: '/icons/logo.svg'
   }
