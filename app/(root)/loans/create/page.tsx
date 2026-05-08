@@ -31,60 +31,61 @@ export default async function CreateLoanPage() {
   };
 
   return (
-    <section className="payment-transfer">
+    <section className="home-content">
       <HeaderBox 
-        title="Create New Loan"
-        subtext="Originate a new loan for an existing client."
+        title="Loan Origination"
+        subtext="Initiate a new credit facility for a verified borrower."
       />
 
-      <section className="size-full pt-5">
-        <form action={handleCreateLoan} className="flex flex-col gap-6 max-w-2xl bg-white p-6 rounded-xl border border-gray-200">
-          
-          <div className="flex flex-col gap-2">
-            <label className="text-14 font-medium text-gray-700">Select Client</label>
-            <select name="clientId" required className="w-full rounded-lg border border-gray-300 p-3 text-16 placeholder:text-16 outline-none bg-white">
-              <option value="">-- Choose Client --</option>
-              {clients.map((c: any) => (
-                <option key={c.$id} value={c.$id}>{c.firstName} {c.lastName} ({c.nationalId})</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-14 font-medium text-gray-700">Loan Type</label>
-            <select name="loanType" required className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none bg-white">
-              <option value="Emergency Loan">Emergency Loan</option>
-              <option value="Long-Term Loan">Long-Term Loan</option>
-              <option value="Asset Financing Loan">Asset Financing Loan</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-14 font-medium text-gray-700">Principal Amount (KES)</label>
-            <input type="number" step="0.01" name="principalAmount" required placeholder="e.g. 5000" className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
+      <section className="flex-1 pt-4">
+        <form action={handleCreateLoan} className="flex flex-col gap-8 max-w-2xl card-premium">
+          <div className="grid grid-cols-1 gap-6">
             <div className="flex flex-col gap-2">
-              <label className="text-14 font-medium text-gray-700">Monthly Interest Rate (%)</label>
-              <input type="number" step="0.01" name="interestRate" required placeholder="e.g. 5" className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-14 font-medium text-gray-700">Interest Type</label>
-              <select name="interestType" required className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none bg-white">
-                <option value="Flat">Flat Rate</option>
-                <option value="Reducing">Reducing Balance</option>
+              <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Borrower Selection</label>
+              <select name="clientId" required className="input-class appearance-none">
+                <option value="">-- Select Client Profile --</option>
+                {clients.map((c: any) => (
+                  <option key={c.$id} value={c.$id}>{c.firstName} {c.lastName} ({c.nationalId})</option>
+                ))}
               </select>
             </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Loan Product Type</label>
+              <select name="loanType" required className="input-class appearance-none">
+                <option value="Emergency Loan">Emergency Loan</option>
+                <option value="Long-Term Loan">Long-Term Loan</option>
+                <option value="Asset Financing Loan">Asset Financing Loan</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Principal Amount (KES)</label>
+              <input type="number" step="0.01" name="principalAmount" required placeholder="50,000.00" className="input-class" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Monthly Rate (%)</label>
+                <input type="number" step="0.01" name="interestRate" required placeholder="5.00" className="input-class" />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Calculation Method</label>
+                <select name="interestType" required className="input-class appearance-none">
+                  <option value="Flat">Flat Rate</option>
+                  <option value="Reducing">Reducing Balance</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Tenure (Months)</label>
+              <input type="number" name="durationInMonths" required placeholder="12" className="input-class" />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-14 font-medium text-gray-700">Duration (Months)</label>
-            <input type="number" name="durationInMonths" required placeholder="e.g. 12" className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
-          </div>
-
-          <button type="submit" className="text-16 w-full bg-bank-gradient font-semibold text-white shadow-form rounded-lg py-3 mt-4">
+          <button type="submit" className="bg-primary text-white font-bold h-12 rounded-xl shadow-premium hover:bg-primary/90 transition-all active:scale-[0.98] mt-4">
             Originate Loan
           </button>
         </form>

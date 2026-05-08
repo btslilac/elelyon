@@ -2,85 +2,99 @@ import HeaderBox from "@/components/HeaderBox";
 import { getClients } from "@/lib/actions/client.actions";
 import { formatAmount } from "@/lib/utils";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default async function ClientsPage() {
   const clients = await getClients() || [];
 
   return (
-    <section className="payment-transfer">
-      <div className="flex w-full justify-between items-center mb-6">
+    <section className="home-content">
+      <div className="flex w-full justify-between items-end">
         <HeaderBox 
-          title="Clients"
-          subtext="Manage your loan clients and their balances."
+          title="Client Registry"
+          subtext="Comprehensive database of all registered borrowers and their financial health."
         />
-        <Link href="/clients/create" className="bg-bank-gradient text-white px-5 py-2.5 rounded-lg font-semibold text-14 shadow-form hover:opacity-90 transition-all">
-          + New Client
+        <Link href="/clients/create" className="bg-primary text-white px-6 h-11 rounded-xl font-bold text-14 shadow-premium hover:bg-primary/90 transition-all flex-center">
+          Add New Client
         </Link>
       </div>
 
       {/* Client Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-chart flex flex-col gap-1 border-t-4 border-t-blue-600">
-          <p className="text-14 font-semibold text-gray-500 uppercase tracking-wider">Total Clients</p>
-          <h2 className="text-30 font-bold text-black-1">{clients.length}</h2>
-          <p className="text-12 text-gray-400 mt-1">Registered borrowers</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="card-premium border-t-4 border-t-primary">
+          <p className="text-12 font-bold text-gray-400 uppercase tracking-widest mb-1">Total Borrowers</p>
+          <h2 className="text-30 font-black text-gray-900">{clients.length}</h2>
+          <div className="mt-4 flex items-center gap-2">
+            <span className="badge badge-success">Registered</span>
+            <p className="text-12 text-gray-400 font-medium">Active accounts</p>
+          </div>
         </div>
         
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-chart flex flex-col gap-1 border-t-4 border-t-red-600">
-          <p className="text-14 font-semibold text-gray-500 uppercase tracking-wider">Total Outstanding</p>
-          <h2 className="text-30 font-bold text-red-600">
+        <div className="card-premium border-t-4 border-t-red-500">
+          <p className="text-12 font-bold text-gray-400 uppercase tracking-widest mb-1">Portfolio Exposure</p>
+          <h2 className="text-30 font-black text-red-600">
             {formatAmount(clients.reduce((acc: number, c: any) => acc + (c.outstandingBalance || 0), 0))}
           </h2>
-          <p className="text-12 text-gray-400 mt-1">Total debt in portfolio</p>
+          <div className="mt-4 flex items-center gap-2">
+            <span className="badge badge-error">Outstanding</span>
+            <p className="text-12 text-gray-400 font-medium">Unpaid principal</p>
+          </div>
         </div>
       </div>
 
-      <section className="size-full pt-5">
-        <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-chart">
-          <table className="w-full text-sm text-left border-collapse bg-white">
-            <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 uppercase text-[11px] tracking-widest font-bold">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Name</th>
-                <th className="px-6 py-4 font-semibold">National ID</th>
-                <th className="px-6 py-4 font-semibold">Phone</th>
-                <th className="px-6 py-4 font-semibold">Total Borrowed</th>
-                <th className="px-6 py-4 font-semibold">Outstanding</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+      <div className="flex flex-col gap-6">
+        <h2 className="text-20 font-black text-gray-900 tracking-tight">Borrower Database</h2>
+        <div className="card-premium p-0 overflow-hidden">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-6 py-4 text-12 font-bold text-gray-400 uppercase tracking-widest">Client</th>
+                <th className="px-6 py-4 text-12 font-bold text-gray-400 uppercase tracking-widest">ID / Phone</th>
+                <th className="px-6 py-4 text-12 font-bold text-gray-400 uppercase tracking-widest">Disbursed</th>
+                <th className="px-6 py-4 text-12 font-bold text-gray-400 uppercase tracking-widest">Balance</th>
+                <th className="px-6 py-4 text-12 font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-50">
               {clients.map((client: any) => (
-                <tr key={client.$id} className="hover:bg-gray-50 transition-colors">
+                <tr key={client.$id} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex-center size-10 rounded-full bg-blue-100 text-blue-700 font-bold text-14">
+                      <div className="flex-center size-10 rounded-xl bg-primary/5 text-primary font-black text-14 border border-primary/10">
                         {client.firstName?.[0]}{client.lastName?.[0]}
                       </div>
-                      <span className="text-gray-900 font-semibold">{client.firstName} {client.lastName}</span>
+                      <div className="flex flex-col">
+                        <span className="text-gray-900 font-bold">{client.firstName} {client.lastName}</span>
+                        <span className="text-12 text-gray-400 font-medium">{client.email}</span>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{client.nationalId}</td>
-                  <td className="px-6 py-4 text-gray-600">{client.phone}</td>
-                  <td className="px-6 py-4 text-gray-900 font-semibold">{formatAmount(client.totalBorrowed || 0)}</td>
-                  <td className="px-6 py-4 text-red-600 font-semibold">{formatAmount(client.outstandingBalance || 0)}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="text-gray-600 font-medium">{client.nationalId}</span>
+                      <span className="text-12 text-gray-400">{client.phone}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-gray-900 font-bold">{formatAmount(client.totalBorrowed || 0)}</td>
+                  <td className="px-6 py-4 text-red-600 font-bold">{formatAmount(client.outstandingBalance || 0)}</td>
                   <td className="px-6 py-4 text-right">
-                    <Link href={`/clients/${client.$id}/edit`} className="inline-block px-4 py-1.5 rounded-lg border border-gray-200 text-12 font-bold text-gray-600 hover:bg-gray-50 hover:border-blue-300 hover:text-blue-600 transition-all shadow-sm">
-                      Edit Profile
+                    <Link href={`/clients/${client.$id}/edit`} className="inline-flex h-8 items-center px-4 rounded-lg border border-gray-200 text-12 font-bold text-gray-600 hover:border-primary hover:text-primary transition-all bg-white shadow-sm">
+                      Edit
                     </Link>
                   </td>
                 </tr>
               ))}
               {clients.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                    No clients found.
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-400 font-medium italic">
+                    No borrower records found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </section>
+      </div>
     </section>
   )
 }

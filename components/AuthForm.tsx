@@ -83,76 +83,64 @@ const AuthForm = ({ type }: { type: string }) => {
   }
 
   return (
-    <section className="auth-form">
-      <header className='flex flex-col gap-5 md:gap-8'>
-        <Link href="/" className="cursor-pointer flex items-center gap-1">
-          <Image
-            src="/icons/logo.svg"
-            width={34}
-            height={34}
-            alt="El Elyon logo"
-          />
-          <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">El Elyon</h1>
-        </Link>
+    <section className="flex-center min-h-screen w-full bg-white px-6">
+      <div className="flex w-full max-w-[420px] flex-col justify-center gap-8 py-10">
+        <header className='flex flex-col gap-6'>
+          <Link href="/" className="cursor-pointer flex items-center gap-2">
+            <div className="size-10 rounded-xl bg-primary flex-center shadow-premium">
+              <Image src="/icons/logo.svg" width={24} height={24} alt="logo" className="brightness-[10] invert-0" />
+            </div>
+            <h1 className="text-24 font-black text-gray-900 tracking-tight">El Elyon</h1>
+          </Link>
 
-        <div className="flex flex-col gap-1 md:gap-3">
-          <h1 className="text-24 lg:text-36 font-semibold text-gray-900">
-            {type === 'sign-in'
-              ? 'Sign In'
-              : 'Sign Up'
-            }
-            <p className="text-16 font-normal text-gray-600">
-              {'Please enter your details'}
+          <div className="flex flex-col gap-1">
+            <h1 className="text-30 font-black text-gray-900 tracking-tight">
+              {type === 'sign-in' ? 'Welcome back' : 'Create account'}
+            </h1>
+            <p className="text-16 font-medium text-gray-500">
+              {type === 'sign-in' ? 'Enter your credentials to access your account' : 'Start managing your loan portfolio today'}
             </p>
-          </h1>
-        </div>
-      </header>
-      <>
+          </div>
+        </header>
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {type === 'sign-up' && (
-              <>
-                <div className="flex gap-4">
-                  <CustomInput control={form.control} name='firstName' label="First Name" placeholder='Enter your first name' />
-                  <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Enter your last name' />
-                </div>
-              </>)}
-
-            <CustomInput control={form.control} name='email' label="Email" placeholder='Enter your email' />
-
-            <CustomInput control={form.control} name='password' label="Password" placeholder='Enter your password' />
-
-            {error && (
-              <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-                <p className="text-14 font-medium text-red-700">{error}</p>
+              <div className="flex gap-4">
+                <CustomInput control={form.control} name='firstName' label="First Name" placeholder='John' />
+                <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Doe' />
               </div>
             )}
 
-            <div className="flex flex-col gap-4">
-              <Button type="submit" disabled={isLoading} className="form-btn">
-                {isLoading ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin" /> &nbsp;
-                    Loading...
-                  </>
-                ) : type === 'sign-in'
-                  ? 'Sign In' : 'Sign Up'}
-              </Button>
-            </div>
+            <CustomInput control={form.control} name='email' label="Email" placeholder='john@example.com' />
+            <CustomInput control={form.control} name='password' label="Password" placeholder='••••••••' />
+
+            {error && (
+              <div className="rounded-xl bg-red-50 border border-red-100 p-4">
+                <p className="text-14 font-semibold text-red-600">{error}</p>
+              </div>
+            )}
+
+            <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl shadow-premium transition-all active:scale-[0.98]">
+              {isLoading ? (
+                <div className="flex-center gap-2">
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>Processing...</span>
+                </div>
+              ) : type === 'sign-in' ? 'Sign In' : 'Sign Up'}
+            </Button>
           </form>
         </Form>
 
-        <footer className="flex justify-center gap-1">
-          <p className="text-14 font-normal text-gray-600">
-            {type === 'sign-in'
-              ? "Don't have an account?"
-              : "Already have an account?"}
+        <footer className="flex justify-center gap-1 border-t border-gray-100 pt-6">
+          <p className="text-14 font-medium text-gray-500">
+            {type === 'sign-in' ? "Don't have an account?" : "Already have an account?"}
           </p>
-          <Link href={type === 'sign-in' ? '/sign-up' : '/sign-in'} className="form-link">
-            {type === 'sign-in' ? 'Sign up' : 'Sign in'}
+          <Link href={type === 'sign-in' ? '/sign-up' : '/sign-in'} className="text-14 font-bold text-primary hover:underline underline-offset-4">
+            {type === 'sign-in' ? 'Create one' : 'Sign in'}
           </Link>
         </footer>
-      </>
+      </div>
     </section>
   )
 }

@@ -28,50 +28,51 @@ export default function CreateClientPage() {
   };
 
   return (
-    <section className="payment-transfer">
+    <section className="home-content">
       <HeaderBox 
-        title="Register New Client"
-        subtext="Add a new borrower to the system."
+        title="Borrower Registration"
+        subtext="Onboard a new client into the lending ecosystem."
       />
 
-      <section className="size-full pt-5">
-        <form action={handleCreateClient} className="flex flex-col gap-6 max-w-2xl bg-white p-6 rounded-xl border border-gray-200">
-          
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex flex-col gap-2">
-              <label className="text-14 font-medium text-gray-700">First Name</label>
-              <input type="text" name="firstName" required className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
+      <section className="flex-1 pt-4">
+        <form action={handleCreateClient} className="flex flex-col gap-8 max-w-2xl card-premium">
+          <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">First Name</label>
+                <input type="text" name="firstName" required placeholder="John" className="input-class" />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Last Name</label>
+                <input type="text" name="lastName" required placeholder="Doe" className="input-class" />
+              </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-14 font-medium text-gray-700">Last Name</label>
-              <input type="text" name="lastName" required className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
+              <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">National ID / Passport</label>
+              <input type="text" name="nationalId" required placeholder="ID Number" className="input-class" />
             </div>
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-14 font-medium text-gray-700">National ID / Passport Number</label>
-            <input type="text" name="nationalId" required className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Phone Number</label>
+                <input type="tel" name="phone" required placeholder="+254 7..." className="input-class" />
+              </div>
 
-          <div className="grid grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Email Address</label>
+                <input type="email" name="email" placeholder="john@example.com" className="input-class" />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-2">
-              <label className="text-14 font-medium text-gray-700">Phone Number</label>
-              <input type="tel" name="phone" required className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-14 font-medium text-gray-700">Email (Optional)</label>
-              <input type="email" name="email" className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
+              <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Residential Address</label>
+              <input type="text" name="address" placeholder="Physical location details" className="input-class" />
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-14 font-medium text-gray-700">Home Address</label>
-            <input type="text" name="address" className="w-full rounded-lg border border-gray-300 p-3 text-16 outline-none" />
-          </div>
-
-          <button type="submit" className="text-16 w-full bg-bank-gradient font-semibold text-white shadow-form rounded-lg py-3 mt-4">
+          <button type="submit" className="bg-primary text-white font-bold h-12 rounded-xl shadow-premium hover:bg-primary/90 transition-all active:scale-[0.98] mt-4">
             Register Client
           </button>
         </form>

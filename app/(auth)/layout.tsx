@@ -16,6 +16,7 @@ export default function RootLayout({
             width={500}
             height={500}
             className="rounded-l-xl object-contain"
+            priority
           />
         </div>
       </div>

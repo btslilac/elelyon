@@ -6,7 +6,8 @@ import { formatAmount } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 
-export default async function LoanDetailPage({ params: { id } }: { params: { id: string } }) {
+export default async function LoanDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const loan = await getLoanById(id);
 
   if (!loan) {

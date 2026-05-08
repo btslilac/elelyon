@@ -4,7 +4,8 @@ import { getClients } from "@/lib/actions/client.actions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default async function EditLoanPage({ params: { id } }: { params: { id: string } }) {
+export default async function EditLoanPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const loan = await getLoanById(id);
   const clients = await getClients() || [];
 
