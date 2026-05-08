@@ -14,17 +14,20 @@ export default async function RootLayout({
   if(!loggedIn) redirect('/sign-in')
 
   return (
-    <main className="flex h-screen w-full font-inter">
+    <main className="flex h-screen w-full bg-gray-50 font-inter text-gray-900">
       <Sidebar user={loggedIn} />
 
-      <div className="flex size-full flex-col">
-        <div className="root-layout">
+      <div className="flex w-full flex-col h-screen overflow-hidden">
+        {/* Mobile Header */}
+        <div className="flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white px-5 sm:px-8 md:hidden">
           <Image src="/icons/logo.svg" width={30} height={30} alt="logo" />
-          <div>
-            <MobileNav user={loggedIn} />
-          </div>
+          <MobileNav user={loggedIn} />
         </div>
-        {children}
+        
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          {children}
+        </div>
       </div>
     </main>
   );
