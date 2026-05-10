@@ -4,6 +4,7 @@ import { getLoggedInUser } from "@/lib/actions/user.actions";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Landmark } from "lucide-react";
 
 export default async function RootLayout({
   children,
@@ -12,26 +13,42 @@ export default async function RootLayout({
 }>) {
   const loggedIn = await getLoggedInUser();
 
-  if(!loggedIn) redirect('/sign-in')
+  if (!loggedIn) redirect('/sign-in')
 
   return (
-    <main className="flex h-screen w-full font-inter bg-gray-25">
+    <main className="flex h-screen w-full bg-background antialiased selection:bg-accent/20 selection:text-accent">
       <Sidebar user={loggedIn} />
 
-      <div className="flex size-full flex-col">
+      {/* Column: mobile header (fixed) + scrollable canvas */}
+      <div className="flex size-full flex-col overflow-hidden relative">
+        {/* Mobile Header — stays at top */}
         <div className="root-layout">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="size-8 rounded-lg bg-primary flex-center shadow-premium">
-              <Image src="/icons/logo.svg" width={20} height={20} alt="logo" className="brightness-[10] invert-0" />
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8">
+              <Image
+                src="/icons/logo.svg"
+                alt="El Elyon Logo"
+                width={40}
+                height={40}
+                style={{ objectFit: 'contain' }}
+              />
             </div>
-            <h1 className="text-18 font-black text-gray-900 tracking-tight">El Elyon</h1>
+            <h1 className="text-16 font-semibold text-gray-900 tracking-tight">El Elyon</h1>
           </Link>
           <MobileNav user={loggedIn} />
         </div>
-        <div className="flex-1 overflow-hidden">
-          {children}
+
+        {/* Main App Canvas — scrollable */}
+        <div className="flex-1 overflow-y-auto relative z-10">
+          {/* Subtle mesh background for premium feel */}
+          <div className="absolute top-0 left-0 w-full h-[500px] bg-mesh-gradient pointer-events-none opacity-30 z-0"></div>
+
+          <div className="relative z-10 min-h-full">
+            {children}
+          </div>
         </div>
       </div>
     </main>
+
   );
 }

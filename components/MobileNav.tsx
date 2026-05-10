@@ -4,78 +4,81 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
+  SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet"
 import { sidebarLinks } from "@/constants"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import Footer from "./Footer"
+import { LayoutDashboard, Users, CreditCard, Landmark, Menu } from 'lucide-react'
+
+const iconMap: Record<string, React.ElementType> = {
+  '/': LayoutDashboard,
+  '/clients': Users,
+  '/loans': CreditCard,
+}
 
 const MobileNav = ({ user }: MobileNavProps) => {
   const pathname = usePathname();
 
   return (
-    <section className="w-full max-w-[264px]">
+    <section className="w-fit">
       <Sheet>
-        <SheetTrigger>
-          <Image
-            src="/icons/hamburger.svg"
-            width={30}
-            height={30}
-            alt="menu"
-            className="cursor-pointer"
-          />
+        <SheetTrigger asChild>
+          <button className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors border border-gray-200/70">
+            <Menu size={20} className="text-gray-600" />
+          </button>
         </SheetTrigger>
-        <SheetContent side="left" className="border-none bg-white p-0">
-          <div className="flex flex-col h-full p-6">
-            <Link href="/" className="cursor-pointer flex items-center gap-3 px-2 mb-10">
-              <div className="size-10 rounded-xl bg-primary flex-center shadow-premium">
-                <Image src="/icons/logo.svg" width={24} height={24} alt="logo" className="brightness-[10] invert-0" />
-              </div>
-              <h1 className="text-24 font-black text-gray-900 tracking-tight">El Elyon</h1>
-            </Link>
+        <SheetContent side="left" className="border-none bg-white p-0 w-72 shadow-xl">
+          <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+          <SheetDescription className="sr-only">Main navigation links for El Elyon</SheetDescription>
+          <div className="flex flex-col h-full px-4 py-5">
 
-            <div className="flex-1 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
-              <SheetClose asChild>
-                <nav className="flex flex-col gap-2">
-                  {sidebarLinks.map((item) => {
-                    const isActive = pathname === item.route || pathname.startsWith(`${item.route}/`)
+            {/* Brand */}
+            <SheetClose asChild>
+              <Link href="/" className="sidebar-brand">
+                <div className="sidebar-logo">
+                  <Image
+                    src="/icons/logo.svg"
+                    alt="El Elyon Logo"
+                    width={40}
+                    height={40}
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+                <div className="sidebar-brand-info">
+                  <span className="sidebar-brand-name">El Elyon</span>
+                  <span className="sidebar-brand-tagline">Capital &amp; Credit Solutions</span>
+                </div>
+              </Link>
+            </SheetClose>
 
-                    return (
-                      <SheetClose asChild key={item.route}>
-                        <Link href={item.route}
-                          className={cn('sidebar-link', { 
-                            'sidebar-link-active': isActive 
-                          })}
-                        >
-                          <div className="relative size-5">
-                            <Image 
-                              src={item.imgURL}
-                              alt={item.label}
-                              fill
-                              className={cn({
-                                'brightness-[0.5]': !isActive,
-                                'brightness-[1]': isActive
-                              })}
-                            />
-                          </div>
-                          <p className="text-16 font-medium">
-                            {item.label}
-                          </p>
-                        </Link>
-                      </SheetClose>
-                    )
-                  })}
-                </nav>
-              </SheetClose>
-            </div>
+            {/* Nav */}
+            <nav className="sidebar-nav">
+              {sidebarLinks.map((item) => {
+                const isActive = pathname === item.route || pathname.startsWith(`${item.route}/`)
+                const Icon = iconMap[item.route] || LayoutDashboard
 
-            <div className="pt-6 border-t border-gray-100">
+                return (
+                  <SheetClose asChild key={item.route}>
+                    <Link
+                      href={item.route}
+                      className={cn('sidebar-link', { 'sidebar-link-active': isActive })}
+                    >
+                      <Icon className="sidebar-icon" strokeWidth={isActive ? 2.5 : 2} />
+                      <span className="sidebar-label">{item.label}</span>
+                    </Link>
+                  </SheetClose>
+                )
+              })}
+            </nav>
+
+            {/* Footer */}
+            <div className="sidebar-footer">
               <Footer user={user} type="mobile" />
             </div>
           </div>

@@ -1,28 +1,76 @@
-import HeaderBox from "@/components/HeaderBox";
 import { getLoanById, approveLoan, denyLoan } from "@/lib/actions/loan.actions";
-import { processRepayment, getRepaymentsByLoan } from "@/lib/actions/repayment.actions";
+import { getRepaymentsByLoan } from "@/lib/actions/repayment.actions";
+import { getPenaltiesByLoan } from "@/lib/actions/penalty.actions";
+import { getAuditLogsByLoan } from "@/lib/actions/audit.actions";
 import { getClientById } from "@/lib/actions/client.actions";
-import { formatAmount } from "@/lib/utils";
+import { getLoggedInUser } from "@/lib/actions/user.actions";
+import { cn } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import LoanDetailClient, { ActionPanel } from "@/components/LoanDetailClient";
+import HeaderBox from "@/components/HeaderBox";
 
-export default async function LoanDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function LoanDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { id } = await params;
-  const loan = await getLoanById(id);
+  const sp = await searchParams;
+
+  const [loan, currentUser] = await Promise.all([
+    getLoanById(id),
+    getLoggedInUser(),
+  ]);
 
   if (!loan) {
-    return <div>Loan not found</div>;
+    return (
+      <section className="home-content">
+        <div className="card-premium" style={{ textAlign: "center", padding: "4rem 1.5rem" }}>
+          <p style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111113" }}>Loan not found</p>
+          <p style={{ fontSize: "0.875rem", color: "#9CA3AF", marginTop: "0.5rem" }}>
+            The requested loan record does not exist.
+          </p>
+          <Link href="/loans" className="btn-primary" style={{ marginTop: "1.5rem", display: "inline-flex" }}>
+            Back to Portfolio
+          </Link>
+        </div>
+      </section>
+    );
   }
 
-  const client = await getClientById(loan.clientId);
-  const repayments = await getRepaymentsByLoan(id) || [];
+  const [client, repayments, penalties, auditLogs] = await Promise.all([
+    getClientById(loan.clientId),
+    getRepaymentsByLoan(id),
+    getPenaltiesByLoan(id),
+    getAuditLogsByLoan(id),
+  ]);
 
-  const totalPaid = repayments.reduce((acc: number, rep: any) => acc + (rep.amount || 0), 0);
+  const safeRepayments = repayments || [];
+  const safePenalties = penalties || [];
+  const safeAuditLogs = auditLogs || [];
+
+  const totalPaid = safeRepayments.reduce(
+    (acc: number, rep: Repayment) => acc + (rep.amount || 0),
+    0
+  );
   const progressPercent = Math.min(100, (totalPaid / (loan.totalPayable || 1)) * 100);
 
+  // Server actions for approve/deny
   const handleApprove = async () => {
     "use server";
-    await approveLoan(id);
+    try {
+      const result = await approveLoan(id);
+      if (!result) {
+        // approveLoan returned null — likely MAKER_CHECKER_VIOLATION
+        redirect(`/loans/${id}?error=maker_checker`);
+      }
+    } catch {
+      redirect(`/loans/${id}?error=maker_checker`);
+    }
     revalidatePath(`/loans/${id}`);
   };
 
@@ -32,178 +80,110 @@ export default async function LoanDetailPage({ params }: { params: Promise<{ id:
     revalidatePath(`/loans/${id}`);
   };
 
-  const handleRepayment = async (formData: FormData) => {
-    "use server";
-    const amount = parseFloat(formData.get("amount") as string);
-    const paymentMethod = formData.get("paymentMethod") as string;
-    const referenceId = formData.get("referenceId") as string;
-
-    await processRepayment({
-      loanId: id,
-      amount,
-      paymentMethod,
-      referenceId,
-    });
-  };
-
   return (
-    <section className="payment-transfer">
-      <HeaderBox
-        title={`Loan ${id.slice(-6).toUpperCase()}`}
-        subtext={
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-12 font-bold border border-blue-100">
-              <span className="size-2 rounded-full bg-blue-600 animate-pulse"></span>
-              {loan.loanType}
-            </div>
-            <span className="text-14 text-gray-500 font-medium">Client: <span className="text-gray-900">{client?.firstName} {client?.lastName}</span></span>
-            <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider 
-              ${loan.status === 'Active' ? 'bg-green-50 text-green-700 border border-green-200' :
-                loan.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' :
-                  loan.status === 'Overdue' ? 'bg-red-50 text-red-700 border border-red-200' :
-                    'bg-gray-50 text-gray-700 border border-gray-200'}`}>
-              {loan.status}
-            </span>
+    <section className="home-content animate-fade-in">
+      {/* Maker-checker violation banner */}
+      {sp?.error === 'maker_checker' && (
+        <div style={{ display: 'flex', gap: '0.875rem', padding: '1rem 1.25rem', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '0.875rem', marginBottom: '0.75rem' }}>
+          <span style={{ fontSize: '1.25rem' }}>⚖️</span>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#92400E' }}>Maker-Checker Violation</p>
+            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#78350F', lineHeight: 1.5 }}>You originated this loan and cannot approve it yourself. A different officer must complete the underwriting decision.</p>
           </div>
-        }
-      />
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-5">
-        {/* Loan Info */}
-        <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-chart flex flex-col gap-6 transition-all hover:shadow-md">
-          <div className="flex justify-between items-center border-b border-gray-50 pb-4">
-            <h2 className="text-20 font-bold text-gray-900">Financial Overview</h2>
-            {loan.status === 'Pending' && (
-              <Link href={`/loans/${id}/edit`} className="text-12 font-bold text-blue-600 px-3 py-1 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                EDIT TERMS
-              </Link>
-            )}
-          </div>
+      {/* Page Header */}
+      <header className="page-header">
+        <HeaderBox
+          title={`Origination ${id.slice(-8).toUpperCase()}`}
+          subtext={
+            <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+              <span
+                className={cn("badge", {
+                  "badge-success": loan.status === "Active",
+                  "badge-pending": loan.status === "Pending",
+                  "badge-error": loan.status === "Overdue" || loan.status === "Denied" || loan.status === "Defaulted",
+                  "badge-completed": loan.status === "Completed",
+                })}
+              >
+                {loan.status}
+              </span>
+              {loan.loanType && (
+                <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 500 }}>
+                  {loan.loanType}
+                </span>
+              )}
+              <span style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>·</span>
+              <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 500 }}>
+                {client?.firstName} {client?.lastName}
+              </span>
+            </div>
+          }
+        />
+        <div style={{ display: "flex", gap: "0.75rem", flexShrink: 0 }}>
+          <Link href="/loans" className="btn-secondary">
+            ← Portfolio
+          </Link>
+          <Link href={`/loans/${id}/statement`} className="btn-primary">
+            Statement
+          </Link>
+        </div>
+      </header>
 
-          <div className="grid grid-cols-2 gap-y-6 gap-x-4">
-            <div>
-              <p className="text-12 font-bold text-gray-400 uppercase tracking-widest">Principal Amount</p>
-              <p className="text-20 font-bold text-gray-900">{formatAmount(loan.principalAmount || 0)}</p>
-            </div>
-            <div>
-              <p className="text-12 font-bold text-gray-400 uppercase tracking-widest">Monthly Rate</p>
-              <p className="text-20 font-bold text-gray-900">{loan.interestRate}% <span className="text-12 text-gray-400 font-medium">({loan.interestType})</span></p>
-            </div>
-            <div>
-              <p className="text-12 font-bold text-gray-400 uppercase tracking-widest">Duration</p>
-              <p className="text-20 font-bold text-gray-900">{loan.durationInMonths} <span className="text-12 text-gray-400 font-medium">Months</span></p>
-            </div>
-            <div>
-              <p className="text-12 font-bold text-gray-400 uppercase tracking-widest">Total Interest</p>
-              <p className="text-20 font-bold text-gray-900">{formatAmount(loan.totalInterest || 0)}</p>
-            </div>
-            <div>
-              <p className="text-12 font-bold text-gray-400 uppercase tracking-widest">Total Payable</p>
-              <p className="text-20 font-bold text-blue-600">{formatAmount(loan.totalPayable || 0)}</p>
-            </div>
-            <div>
-              <p className="text-12 font-bold text-gray-400 uppercase tracking-widest">Remaining Balance</p>
-              <p className="text-24 font-black text-red-600">{formatAmount(loan.balance || 0)}</p>
-            </div>
-          </div>
+      {/* 2-column layout: main content + action panel */}
+      <div style={{
+        display: "grid",
+        gap: "1.25rem",
+      }}
+        className="loan-detail-layout">
 
-          {/* Progress Bar */}
-          <div className="mt-2">
-            <div className="flex justify-between items-end mb-2">
-              <p className="text-12 font-bold text-gray-400 uppercase tracking-widest">Repayment Progress</p>
-              <p className="text-12 font-bold text-blue-600">{progressPercent.toFixed(1)}% PAID</p>
-            </div>
-            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-50">
-              <div
-                className="h-full bg-bank-gradient transition-all duration-1000 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between mt-2 text-12 font-medium text-gray-500">
-              <span>Paid: {formatAmount(totalPaid)}</span>
-              <span> {formatAmount(loan.totalPayable)}</span>
-            </div>
-          </div>
+        {/* Left: interactive client component (KPI strip + tables + audit) */}
+        <div style={{ minWidth: 0 }}>
+          <LoanDetailClient
+            loan={loan}
+            client={client}
+            repayments={safeRepayments}
+            penalties={safePenalties}
+            auditLogs={safeAuditLogs}
+            currentUser={currentUser}
+            totalPaid={totalPaid}
+            progressPercent={progressPercent}
+          />
+        </div>
 
-          {loan.status === 'Pending' && (
-            <div className="flex gap-4 mt-4">
-              <form action={handleApprove} className="flex-1">
-                <button type="submit" className="w-full bg-green-600 text-white rounded-xl py-3 font-bold shadow-form hover:bg-green-700 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                  APPROVE LOAN
-                </button>
-              </form>
-              <form action={handleDeny} className="flex-1">
-                <button type="submit" className="w-full bg-red-50 text-red-600 border border-red-100 rounded-xl py-3 font-bold hover:bg-red-100 transition-all">
-                  DENY
-                </button>
-              </form>
+        {/* Right: action panel */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          {/* Pending approval buttons handled server-side */}
+          {loan.status === "Pending" && (
+            <div className="info-card">
+              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "1rem" }}>
+                Underwriting Decision
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+                <form action={handleApprove}>
+                  <button type="submit" className="btn-success">
+                    APPROVE & DISBURSE
+                  </button>
+                </form>
+                <form action={handleDeny}>
+                  <button type="submit" className="btn-danger">
+                    DECLINE APPLICATION
+                  </button>
+                </form>
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Log Repayment Form */}
-        {(loan.status === 'Active' || loan.status === 'Overdue') && (
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-chart">
-            <h2 className="text-20 font-bold text-gray-900 border-b border-gray-50 pb-4 mb-6">Log Repayment</h2>
-            <form action={handleRepayment} className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Amount (KES)</label>
-                <input type="number" step="0.01" name="amount" max={loan.balance} required placeholder="0.00" className="w-full rounded-xl border border-gray-200 p-3 text-16 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Payment Method</label>
-                <select name="paymentMethod" required className="w-full rounded-xl border border-gray-200 p-3 text-16 outline-none bg-white focus:border-blue-500 transition-all">
-                  <option value="Cash">Cash</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Mobile Money">Mobile Money</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Reference ID (Optional)</label>
-                <input type="text" name="referenceId" placeholder="e.g. MPESA-ABC123" className="w-full rounded-xl border border-gray-200 p-3 text-16 outline-none focus:border-blue-500 transition-all" />
-              </div>
-              <button type="submit" className="w-full bg-bank-gradient text-white rounded-xl py-4 mt-2 font-bold shadow-form hover:opacity-90 transition-all hover:scale-[1.01] active:scale-[0.99]">
-                SUBMIT REPAYMENT
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
-
-      {/* Repayments Table */}
-      <div className="mt-12 flex flex-col gap-4 w-full">
-        <h2 className="text-20 font-bold text-gray-900">Repayment History</h2>
-        <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-chart">
-          <table className="w-full text-sm text-left border-collapse bg-white">
-            <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 uppercase text-[11px] tracking-widest font-bold">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Date</th>
-                <th className="px-6 py-4 font-semibold">Amount</th>
-                <th className="px-6 py-4 font-semibold">Method</th>
-                <th className="px-6 py-4 font-semibold text-right">Reference ID</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {repayments.map((rep: any) => (
-                <tr key={rep.$id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-gray-600">{new Date(rep.date).toLocaleString()}</td>
-                  <td className="px-6 py-4 text-green-600 font-bold">+{formatAmount(rep.amount || 0)}</td>
-                  <td className="px-6 py-4 text-gray-600">
-                    <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold text-gray-500">{rep.paymentMethod}</span>
-                  </td>
-                  <td className="px-6 py-4 text-right text-gray-400 font-mono text-xs">{rep.referenceId || '-'}</td>
-                </tr>
-              ))}
-              {repayments.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500 italic">No repayments recorded yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <ActionPanel
+            loan={loan}
+            client={client}
+            currentUser={currentUser}
+            repayments={safeRepayments}
+            penalties={safePenalties}
+          />
         </div>
       </div>
-
     </section>
-  )
+  );
 }

@@ -1,148 +1,251 @@
 'use client';
 
-import Image from 'next/image'
-import Link from 'next/link'
-import React, { useState } from 'react'
-
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import CustomInput from './CustomInput';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState } from 'react';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { authFormSchema } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck, TrendingUp, Users, Lock, Mail, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signIn, signUp } from '@/lib/actions/user.actions';
+
+const FEATURES = [
+  { icon: TrendingUp, label: 'Real-time Portfolio Analytics' },
+  { icon: Users, label: 'Multi-client Loan Management' },
+  { icon: ShieldCheck, label: 'Bank-grade Security & Compliance' },
+];
 
 const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
+  const isSignIn = type === 'sign-in';
   const formSchema = authFormSchema(type);
 
-  // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: ''
-    },
-  })
+    defaultValues: { email: '', password: '' },
+  });
 
-  // 2. Define a submit handler.
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setError('');
-
     try {
       if (type === 'sign-up') {
-        const userData = {
+        const newUser = await signUp({
           firstName: data.firstName!,
           lastName: data.lastName!,
           email: data.email,
-          password: data.password
-        }
-
-        const newUser = await signUp(userData);
-        if (newUser) {
-          router.push('/');
-        } else {
-          setError('Sign up failed. Please check your details and try again.');
-        }
-      }
-
-      if (type === 'sign-in') {
-        const response = await signIn({
-          email: data.email,
           password: data.password,
-        })
-
-        if (response) {
-          router.push('/');
-        } else {
-          setError('Invalid email or password. Please try again.');
-        }
+        });
+        if (newUser) router.push('/');
+        else setError('Sign up failed. Please check your details and try again.');
       }
-    } catch (error) {
-      console.log(error);
+      if (type === 'sign-in') {
+        const response = await signIn({ email: data.email, password: data.password });
+        if (response) router.push('/');
+        else setError('Invalid email or password. Please try again.');
+      }
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }
+  };
+
+  const { register, handleSubmit, formState: { errors } } = form;
 
   return (
-    <section className="flex-center min-h-screen w-full bg-white px-6">
-      <div className="flex w-full max-w-[420px] flex-col justify-center gap-8 py-10">
-        <header className='flex flex-col gap-6'>
-          <Link href="/" className="cursor-pointer flex items-center gap-2">
-            <div className="size-10 rounded-xl bg-primary flex-center shadow-premium">
-              <Image src="/icons/logo.svg" width={24} height={24} alt="logo" className="brightness-[10] invert-0" />
-            </div>
-            <h1 className="text-24 font-black text-gray-900 tracking-tight">El Elyon</h1>
-          </Link>
+    <div className="auth-page">
 
-          <div className="flex flex-col gap-1">
-            <h1 className="text-30 font-black text-gray-900 tracking-tight">
-              {type === 'sign-in' ? 'Welcome back' : 'Create account'}
-            </h1>
-            <p className="text-16 font-medium text-gray-500">
-              {type === 'sign-in' ? 'Enter your credentials to access your account' : 'Start managing your loan portfolio today'}
+      {/* ── Left Brand Panel ── */}
+      <div className="auth-panel-left">
+        <div className="auth-blob auth-blob-1" />
+        <div className="auth-blob auth-blob-2" />
+
+        <div className="auth-left-inner">
+          {/* Brand mark */}
+          <div className="auth-brand">
+            <div className="auth-logo">
+              <Image src="/icons/logo.svg" width={120} height={120} alt="logo" />
+            </div>
+            <span className="auth-brand-name">El Elyon</span>
+          </div>
+
+          {/* Hero copy */}
+          <div className="auth-hero">
+            <h2 className="auth-hero-title">
+              Enterprise-Grade<br />Loan Management
+            </h2>
+            <p className="auth-hero-sub">
+              The platform built for modern lenders — track portfolios, manage clients, and process repayments at scale.
             </p>
           </div>
-        </header>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {type === 'sign-up' && (
-              <div className="flex gap-4">
-                <CustomInput control={form.control} name='firstName' label="First Name" placeholder='John' />
-                <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Doe' />
-              </div>
-            )}
+          {/* Feature pills */}
+          <ul className="auth-features">
+            {FEATURES.map(({ icon: Icon, label }) => (
+              <li key={label} className="auth-feature-item">
+                <div className="auth-feature-icon"><Icon size={14} /></div>
+                <span>{label}</span>
+              </li>
+            ))}
+          </ul>
 
-            <CustomInput control={form.control} name='email' label="Email" placeholder='john@example.com' />
-            <CustomInput control={form.control} name='password' label="Password" placeholder='••••••••' />
-
-            {error && (
-              <div className="rounded-xl bg-red-50 border border-red-100 p-4">
-                <p className="text-14 font-semibold text-red-600">{error}</p>
-              </div>
-            )}
-
-            <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl shadow-premium transition-all active:scale-[0.98]">
-              {isLoading ? (
-                <div className="flex-center gap-2">
-                  <Loader2 size={20} className="animate-spin" />
-                  <span>Processing...</span>
-                </div>
-              ) : type === 'sign-in' ? 'Sign In' : 'Sign Up'}
-            </Button>
-          </form>
-        </Form>
-
-        <footer className="flex justify-center gap-1 border-t border-gray-100 pt-6">
-          <p className="text-14 font-medium text-gray-500">
-            {type === 'sign-in' ? "Don't have an account?" : "Already have an account?"}
-          </p>
-          <Link href={type === 'sign-in' ? '/sign-up' : '/sign-in'} className="text-14 font-bold text-primary hover:underline underline-offset-4">
-            {type === 'sign-in' ? 'Create one' : 'Sign in'}
-          </Link>
-        </footer>
+          {/* Bottom stat bar */}
+          <div className="auth-stats">
+            <div className="auth-stat">
+              <span className="auth-stat-num">99.9%</span>
+              <span className="auth-stat-label">Uptime SLA</span>
+            </div>
+            <div className="auth-stat-divider" />
+            <div className="auth-stat">
+              <span className="auth-stat-num">256-bit</span>
+              <span className="auth-stat-label">Encryption</span>
+            </div>
+            <div className="auth-stat-divider" />
+            <div className="auth-stat">
+              <span className="auth-stat-num">&lt;100ms</span>
+              <span className="auth-stat-label">Query Speed</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
-  )
-}
 
-export default AuthForm
+      {/* ── Right Form Panel ── */}
+      <div className="auth-panel-right">
+        <div className="auth-form-wrap">
+
+          {/* Mobile logo (hidden on desktop) */}
+          <div className="auth-mobile-brand">
+            <div className="auth-logo-dark">
+              <Image src="/icons/logo.svg" width={36} height={36} alt="logo" />
+            </div>
+            <span className="auth-mobile-brand-name">El Elyon</span>
+          </div>
+
+          {/* Heading */}
+          <div className="auth-form-header">
+            <h1 className="auth-form-title">
+              {isSignIn ? 'Welcome back' : 'Create your account'}
+            </h1>
+            <p className="auth-form-sub">
+              {isSignIn
+                ? 'Sign in to access your lending dashboard.'
+                : 'Set up your professional loan management portal.'}
+            </p>
+          </div>
+
+          {/* ── Form ── */}
+          <form onSubmit={handleSubmit(onSubmit)} className="auth-form" noValidate>
+
+            {/* Name row — sign-up only */}
+            {!isSignIn && (
+              <div className="auth-row-2">
+                <div className="auth-field">
+                  <label className="auth-label"><User size={12} />First Name</label>
+                  <input
+                    {...register('firstName')}
+                    type="text"
+                    placeholder="John"
+                    className={`auth-input${(errors as any).firstName ? ' auth-input-error' : ''}`}
+                  />
+                  {(errors as any).firstName && (
+                    <p className="auth-field-error">{(errors as any).firstName.message}</p>
+                  )}
+                </div>
+                <div className="auth-field">
+                  <label className="auth-label"><User size={12} />Last Name</label>
+                  <input
+                    {...register('lastName')}
+                    type="text"
+                    placeholder="Doe"
+                    className={`auth-input${(errors as any).lastName ? ' auth-input-error' : ''}`}
+                  />
+                  {(errors as any).lastName && (
+                    <p className="auth-field-error">{(errors as any).lastName.message}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Email */}
+            <div className="auth-field">
+              <label className="auth-label"><Mail size={12} />Email Address</label>
+              <input
+                {...register('email')}
+                type="email"
+                placeholder="you@example.com"
+                className={`auth-input${errors.email ? ' auth-input-error' : ''}`}
+              />
+              {errors.email && <p className="auth-field-error">{errors.email.message}</p>}
+            </div>
+
+            {/* Password */}
+            <div className="auth-field">
+              <div className="auth-label-row">
+                <label className="auth-label"><Lock size={12} />Password</label>
+                {isSignIn && (
+                  <Link href="/forgot-password" style={{ fontSize: "0.75rem", color: "#0A0A0C", fontWeight: 600, textDecoration: "none" }}>
+                    Forgot Password?
+                  </Link>
+                )}
+              </div>
+              <div className="auth-password-wrap">
+                <input
+                  {...register('password')}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  className={`auth-input auth-password-input${errors.password ? ' auth-input-error' : ''}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(p => !p)}
+                  className="auth-toggle-pw"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                  )}
+                </button>
+              </div>
+              {errors.password && <p className="auth-field-error">{errors.password.message}</p>}
+            </div>
+
+            {/* Error banner */}
+            {error && (
+              <div className="auth-error-banner">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                <p>{error}</p>
+              </div>
+            )}
+
+            {/* Submit button */}
+            <button type="submit" disabled={isLoading} className="auth-submit-btn">
+              {isLoading
+                ? <><Loader2 size={16} className="auth-spinner" /><span>Processing…</span></>
+                : <span>{isSignIn ? 'Sign In to Dashboard' : 'Create Account'}</span>
+              }
+            </button>
+          </form>
+
+          {/* Switch link */}
+          <p className="auth-footer-text">
+            {isSignIn ? "Don't have an account?" : 'Already have an account?'}{' '}
+            <Link href={isSignIn ? '/sign-up' : '/sign-in'} className="auth-footer-link">
+              {isSignIn ? 'Create one' : 'Sign in'}
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AuthForm;

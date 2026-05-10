@@ -3,6 +3,7 @@
 import { ID, Query } from "node-appwrite";
 import { createAdminClient } from "../appwrite";
 import { parseStringify } from "../utils";
+import { revalidatePath } from "next/cache";
 
 const {
   APPWRITE_DATABASE_ID: DATABASE_ID,
@@ -23,6 +24,9 @@ export const createClient = async (clientData: any) => {
         outstandingBalance: 0,
       }
     );
+
+    revalidatePath("/clients");
+    revalidatePath("/");
 
     return parseStringify(newClient);
   } catch (error) {
@@ -75,6 +79,9 @@ export const updateClient = async (clientId: string, clientData: any) => {
       clientId,
       clientData
     );
+
+    revalidatePath("/clients");
+    revalidatePath("/");
 
     return parseStringify(updatedClient);
   } catch (error) {

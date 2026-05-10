@@ -30,7 +30,7 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
 
 export const signIn = async ({ email, password }: signInProps) => {
   try {
-    const { account } = await createAdminClient();
+    const { account, database, user: userService } = await createAdminClient();
     const session = await account.createEmailPasswordSession(email, password);
 
     (await cookies()).set("appwrite-session", session.secret, {
@@ -42,14 +42,49 @@ export const signIn = async ({ email, password }: signInProps) => {
 
     const user = await getUserInfo({ userId: session.userId });
 
+    let dbUser = user;
+
     if (!user) {
-      // Auth succeeded but no user doc found — likely first login after manual Appwrite user creation.
-      // Return a minimal user object from the session so the app can still redirect.
-      console.warn('No user document found for userId:', session.userId);
-      return null;
+      console.warn('No user document found for userId:', session.userId, 'Attempting auto-recovery.');
+      try {
+        const authUser = await userService.get(session.userId);
+        const nameParts = authUser.name ? authUser.name.split(" ") : ["System", "Admin"];
+        
+        dbUser = await database.createDocument(
+          DATABASE_ID!,
+          USER_COLLECTION_ID!,
+          ID.unique(),
+          {
+            email: authUser.email,
+            firstName: nameParts[0],
+            lastName: nameParts.slice(1).join(" ") || "User",
+            userId: session.userId,
+            userStatus: 'active',
+            role: 'ADMIN' // Recovered/Manually created users get ADMIN access safely
+          }
+        );
+      } catch (err) {
+        console.error("Failed to auto-recover user document", err);
+        return null;
+      }
     }
 
-    return parseStringify(user);
+    // Fail-safe: Auto-grant ADMIN to the owner's email if they accidentally locked themselves out
+    if (dbUser && dbUser.email === 'timtheesam@gmail.com' && dbUser.role !== 'ADMIN') {
+      try {
+        dbUser = await database.updateDocument(
+          DATABASE_ID!,
+          USER_COLLECTION_ID!,
+          dbUser.$id,
+          { role: 'ADMIN' }
+        );
+        console.log("Auto-escalated timtheesam@gmail.com to ADMIN.");
+      } catch (err) {
+        console.error("Failed to auto-escalate owner role.", err);
+      }
+    }
+
+    return parseStringify(dbUser);
   } catch (error) {
     console.error('signIn Error:', error);
     return null;
