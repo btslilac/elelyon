@@ -20,44 +20,22 @@ export default function ResetPasswordPage() {
   const [sessionError, setSessionError] = useState('');
   const [isInvite, setIsInvite] = useState(false);
 
-  // Supabase puts #access_token=...&type=recovery in the URL fragment when the
-  // user clicks the reset link. We must exchange it for a session client-side.
+  // The session is now established by the /auth/callback route before the user
+  // lands here. We just verify it to show the form or an error.
   useEffect(() => {
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // onAuthStateChange fires with event=PASSWORD_RECOVERY after the fragment
-    // is processed by the Supabase JS client automatically on load.
-    // For invite links, Supabase fires SIGNED_IN with user_metadata set.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsInvite(false);
-        setSessionReady(true);
-      }
-      // Invite tokens land here — user is signed in but has no password yet
-      if (event === 'SIGNED_IN' && session?.user?.app_metadata?.provider === 'email') {
-        // If they arrived via an invite link the invited_at field is set
-        if (session.user.invited_at) {
-          setIsInvite(true);
-        }
-        setSessionReady(true);
-      }
-      if (event === 'USER_UPDATED') {
-        setSessionReady(true);
-      }
-    });
-
-    // Also check if the session is already established (e.g. on refresh)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    supabase.auth.getSession().then(({ data: { session }, error: err }) => {
+      if (err || !session) {
+        setSessionError('This link is invalid or has expired. Please request a new password reset.');
+      } else {
         setIsInvite(!!session.user?.invited_at);
-        setSessionReady(true);
       }
+      setSessionReady(true);
     });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

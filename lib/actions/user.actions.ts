@@ -266,7 +266,7 @@ export const inviteUser = async ({
     //    redirectTo is where the user lands after clicking the email link.
     const { data: authData, error: authError } =
       await adminSupabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${siteUrl}/reset-password`,
+        redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
         data: { first_name: firstName, last_name: lastName },
       });
 
@@ -346,7 +346,7 @@ export const requestPasswordReset = async (email: string): Promise<{ success: bo
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/reset-password`,
+      redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
     });
 
     if (error) {
