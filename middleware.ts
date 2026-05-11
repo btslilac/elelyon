@@ -56,7 +56,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
+
   const isAuthRoute =
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/sign-up") ||
