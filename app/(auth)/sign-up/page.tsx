@@ -1,5 +1,6 @@
-import AuthForm from '@/components/AuthForm';
+import { redirect } from 'next/navigation';
 
+// Sign-up is disabled. New users must be created by the administrator.
 export default function SignUp() {
-  return <AuthForm type="sign-up" />;
+  redirect('/sign-in');
 }

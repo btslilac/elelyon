@@ -39,7 +39,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/sign-up") ||
     pathname.startsWith("/forgot-password") ||
-    pathname.startsWith("/reset-password");
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/pending-approval");
 
   // Redirect unauthenticated users away from protected routes
   if (!user && !isAuthRoute) {
@@ -48,11 +49,38 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
-  if (user && isAuthRoute) {
+  // Redirect authenticated users away from auth pages (except pending-approval)
+  if (user && isAuthRoute && !pathname.startsWith("/pending-approval")) {
+    // Check user status before redirecting to dashboard
+    const { data: profile } = await supabase
+      .from("users")
+      .select("user_status")
+      .eq("auth_id", user.id)
+      .maybeSingle();
+
+    if (profile?.user_status === "pending" || profile?.user_status === "rejected") {
+      // Pending/rejected users can stay on auth pages — they shouldn't reach the dashboard
+      return supabaseResponse;
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);
+  }
+
+  // Block pending/rejected users from accessing protected routes
+  if (user && !isAuthRoute) {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("user_status")
+      .eq("auth_id", user.id)
+      .maybeSingle();
+
+    if (profile?.user_status === "pending" || profile?.user_status === "rejected") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/pending-approval";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

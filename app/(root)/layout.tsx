@@ -31,6 +31,8 @@ export default async function RootLayout({
                 width={40}
                 height={40}
                 style={{ objectFit: 'contain' }}
+                priority
+                loading="eager"
               />
             </div>
             <h1 className="text-16 font-semibold text-gray-900 tracking-tight">El Elyon</h1>

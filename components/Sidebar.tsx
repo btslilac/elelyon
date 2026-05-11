@@ -6,13 +6,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import Footer from './Footer'
-import { LayoutDashboard, Users, CreditCard, BarChart2 } from 'lucide-react'
+import { LayoutDashboard, Users, CreditCard, BarChart2, UserCog } from 'lucide-react'
 
 const iconMap: Record<string, React.ElementType> = {
   '/': LayoutDashboard,
   '/clients': Users,
   '/loans': CreditCard,
   '/reports': BarChart2,
+  '/users': UserCog,
 }
 
 const Sidebar = ({ user }: SiderbarProps) => {
@@ -59,6 +60,23 @@ const Sidebar = ({ user }: SiderbarProps) => {
           )
         })}
       </nav>
+
+      {/* Admin-only: User Management */}
+      {user?.role === 'ADMIN' && (
+        <div style={{ padding: '0 0.75rem', marginBottom: '0.5rem' }}>
+          <div style={{
+            fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.08em', color: '#9aa4b8', padding: '0 0.5rem', marginBottom: 4,
+          }}>Admin</div>
+          <Link
+            href="/users"
+            className={cn('sidebar-link', { 'sidebar-link-active': pathname === '/users' || pathname.startsWith('/users/') })}
+          >
+            <UserCog className="sidebar-icon" strokeWidth={pathname.startsWith('/users') ? 2.5 : 2} />
+            <span className="sidebar-label">User Management</span>
+          </Link>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="sidebar-footer">

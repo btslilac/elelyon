@@ -18,6 +18,7 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [sessionReady, setSessionReady] = useState(false);
   const [sessionError, setSessionError] = useState('');
+  const [isInvite, setIsInvite] = useState(false);
 
   // Supabase puts #access_token=...&type=recovery in the URL fragment when the
   // user clicks the reset link. We must exchange it for a session client-side.
@@ -29,15 +30,31 @@ export default function ResetPasswordPage() {
 
     // onAuthStateChange fires with event=PASSWORD_RECOVERY after the fragment
     // is processed by the Supabase JS client automatically on load.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    // For invite links, Supabase fires SIGNED_IN with user_metadata set.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
+        setIsInvite(false);
+        setSessionReady(true);
+      }
+      // Invite tokens land here — user is signed in but has no password yet
+      if (event === 'SIGNED_IN' && session?.user?.app_metadata?.provider === 'email') {
+        // If they arrived via an invite link the invited_at field is set
+        if (session.user.invited_at) {
+          setIsInvite(true);
+        }
+        setSessionReady(true);
+      }
+      if (event === 'USER_UPDATED') {
         setSessionReady(true);
       }
     });
 
     // Also check if the session is already established (e.g. on refresh)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setSessionReady(true);
+      if (session) {
+        setIsInvite(!!session.user?.invited_at);
+        setSessionReady(true);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -84,9 +101,13 @@ export default function ResetPasswordPage() {
             <span className="auth-brand-name">El Elyon</span>
           </div>
           <div className="auth-hero">
-            <h2 className="auth-hero-title">Set your<br />new password</h2>
+            <h2 className="auth-hero-title">
+              {isInvite ? <>Welcome to<br />El Elyon!</> : <>Set your<br />new password</>}
+            </h2>
             <p className="auth-hero-sub">
-              Choose a strong password to keep your lending dashboard secure.
+              {isInvite
+                ? 'Your account is ready. Set a password to start using the system.'
+                : 'Choose a strong password to keep your lending dashboard secure.'}
             </p>
           </div>
         </div>
@@ -110,9 +131,13 @@ export default function ResetPasswordPage() {
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <CheckCircle size={52} strokeWidth={1.5} color="#16a34a" />
               </div>
-              <h1 className="auth-form-title" style={{ marginBottom: '0.5rem' }}>Password updated!</h1>
+              <h1 className="auth-form-title" style={{ marginBottom: '0.5rem' }}>
+                {isInvite ? 'Account Activated!' : 'Password Updated!'}
+              </h1>
               <p className="auth-form-sub" style={{ marginBottom: '2rem' }}>
-                Your password has been changed successfully. Redirecting to sign in…
+                {isInvite
+                  ? 'Your password has been set. You can now sign in to your account.'
+                  : 'Your password has been changed successfully. Redirecting to sign in…'}
               </p>
               <Link href="/sign-in" className="auth-submit-btn" style={{ display: 'inline-flex', textDecoration: 'none' }}>
                 Go to Sign In
@@ -137,8 +162,14 @@ export default function ResetPasswordPage() {
             /* ── New Password Form ── */
             <>
               <div className="auth-form-header">
-                <h1 className="auth-form-title">New Password</h1>
-                <p className="auth-form-sub">Enter and confirm your new password below.</p>
+                <h1 className="auth-form-title">
+                {isInvite ? 'Set Your Password' : 'New Password'}
+              </h1>
+              <p className="auth-form-sub">
+                {isInvite
+                  ? 'Choose a password to activate your El Elyon account.'
+                  : 'Enter and confirm your new password below.'}
+              </p>
               </div>
 
               <form onSubmit={handleSubmit} className="auth-form" noValidate>

@@ -22,6 +22,7 @@ const AuthForm = ({ type }: { type: string }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const isSignIn = type === 'sign-in';
   const formSchema = authFormSchema(type);
@@ -42,13 +43,30 @@ const AuthForm = ({ type }: { type: string }) => {
           email: data.email,
           password: data.password,
         });
-        if (newUser) router.push('/');
-        else setError('Sign up failed. Please check your details and try again.');
+        if (newUser) {
+          setPendingApproval(true);
+        } else {
+          setError('Sign up failed. Please check your details and try again.');
+        }
       }
       if (type === 'sign-in') {
         const response = await signIn({ email: data.email, password: data.password });
-        if (response) router.push('/');
-        else setError('Invalid email or password. Please try again.');
+        if (response) {
+          if (response.userStatus === 'pending') {
+            setError('Your account is awaiting admin approval. Please try again later.');
+            // Sign out immediately so no session is held
+            const { logoutAccount } = await import('@/lib/actions/user.actions');
+            await logoutAccount();
+          } else if (response.userStatus === 'rejected') {
+            setError('Your account request was not approved. Please contact the administrator.');
+            const { logoutAccount } = await import('@/lib/actions/user.actions');
+            await logoutAccount();
+          } else {
+            router.push('/');
+          }
+        } else {
+          setError('Invalid email or password. Please try again.');
+        }
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');
@@ -131,17 +149,47 @@ const AuthForm = ({ type }: { type: string }) => {
           {/* Heading */}
           <div className="auth-form-header">
             <h1 className="auth-form-title">
-              {isSignIn ? 'Welcome back' : 'Create your account'}
+              {isSignIn ? 'Welcome back' : 'Request Access'}
             </h1>
             <p className="auth-form-sub">
               {isSignIn
                 ? 'Sign in to access your lending dashboard.'
-                : 'Set up your professional loan management portal.'}
+                : 'Submit your details. An administrator will review and approve your account.'}
             </p>
           </div>
 
-          {/* ── Form ── */}
-          <form onSubmit={handleSubmit(onSubmit)} className="auth-form" noValidate>
+          {/* ── Pending Approval Success State ── */}
+          {pendingApproval ? (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
+              padding: '2rem 1.5rem', textAlign: 'center',
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #0f4c81, #1a73e8)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </div>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f4c81', margin: 0 }}>
+                Request Submitted!
+              </h2>
+              <p style={{ fontSize: '0.875rem', color: '#555', lineHeight: 1.6, maxWidth: 300 }}>
+                Your account has been created and is <strong>awaiting admin approval</strong>.
+                You will be able to sign in once your access has been granted.
+              </p>
+              <a href="/sign-in" style={{
+                marginTop: 8, padding: '0.6rem 1.5rem', borderRadius: 8,
+                background: '#0f4c81', color: 'white', textDecoration: 'none',
+                fontSize: '0.875rem', fontWeight: 600,
+              }}>Back to Sign In</a>
+            </div>
+          ) : (
+            <>
+            {/* ── Form ── */}
+            <form onSubmit={handleSubmit(onSubmit)} className="auth-form" noValidate>
 
             {/* Name row — sign-up only */}
             {!isSignIn && (
@@ -230,18 +278,22 @@ const AuthForm = ({ type }: { type: string }) => {
             <button type="submit" disabled={isLoading} className="auth-submit-btn">
               {isLoading
                 ? <><Loader2 size={16} className="auth-spinner" /><span>Processing…</span></>
-                : <span>{isSignIn ? 'Sign In to Dashboard' : 'Create Account'}</span>
+                : <span>{isSignIn ? 'Sign In to Dashboard' : 'Submit Request'}</span>
               }
             </button>
           </form>
 
-          {/* Switch link */}
-          <p className="auth-footer-text">
-            {isSignIn ? "Don't have an account?" : 'Already have an account?'}{' '}
-            <Link href={isSignIn ? '/sign-up' : '/sign-in'} className="auth-footer-link">
-              {isSignIn ? 'Create one' : 'Sign in'}
-            </Link>
-          </p>
+          {/* Switch link — only show on sign-in page */}
+          {isSignIn && (
+            <p className="auth-footer-text">
+              Need access?{' '}
+              <span style={{ color: '#888', fontStyle: 'italic', fontSize: '0.8rem' }}>
+                Contact your administrator.
+              </span>
+            </p>
+          )}
+          </>
+          )}
         </div>
       </div>
     </div>
