@@ -25,6 +25,19 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  const { pathname, searchParams } = request.nextUrl;
+  const code = searchParams.get('code');
+
+  // 1. Global PKCE Code Exchange: If a 'code' is present in the URL, exchange it
+  // for a session immediately. This handles Magic Links or Invites that might
+  // land on the home page or other routes directly.
+  if (code && pathname !== '/auth/callback') {
+    await supabase.auth.exchangeCodeForSession(code);
+    const url = request.nextUrl.clone();
+    url.searchParams.delete('code');
+    return NextResponse.redirect(url);
+  }
+
   // getUser() validates the token with Supabase Auth and refreshes it if expired.
   // The middleware is the single serial point per request — it runs before any
   // parallel server components/actions, so by the time they execute the refreshed
@@ -41,7 +54,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/sign-up") ||
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/reset-password") ||
-    pathname.startsWith("/pending-approval");
+    pathname.startsWith("/pending-approval") ||
+    pathname.startsWith("/auth/callback");
 
   // Redirect unauthenticated users away from protected routes
   if (!user && !isAuthRoute) {
