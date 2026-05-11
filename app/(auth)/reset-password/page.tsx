@@ -20,23 +20,43 @@ export default function ResetPasswordPage() {
   const [sessionError, setSessionError] = useState('');
   const [isInvite, setIsInvite] = useState(false);
 
-  // The session is now established by the /auth/callback route before the user
-  // lands here. We just verify it to show the form or an error.
+  // Handle both PKCE (session already exists) and Implicit Flow (fragment-based)
   useEffect(() => {
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    supabase.auth.getSession().then(({ data: { session }, error: err }) => {
-      if (err || !session) {
-        setSessionError('This link is invalid or has expired. Please request a new password reset.');
-      } else {
+    // 1. Listen for auth changes (this handles the fragment automatically on load)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
         setIsInvite(!!session.user?.invited_at);
+        setSessionReady(true);
       }
-      setSessionReady(true);
     });
-  }, []);
+
+    // 2. Check current session (handles the case where we arrived via server callback)
+    supabase.auth.getSession().then(({ data: { session }, error: err }) => {
+      if (session) {
+        setIsInvite(!!session.user?.invited_at);
+        setSessionReady(true);
+      } else if (err) {
+        setSessionError('This link is invalid or has expired.');
+        setSessionReady(true);
+      } else {
+        // Fallback: if no session after a short delay, show error
+        const timer = setTimeout(() => {
+          if (!sessionReady) {
+            setSessionError('This link is invalid or has expired. Please request a new password reset.');
+            setSessionReady(true);
+          }
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [sessionReady]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -28,6 +28,14 @@ export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const code = searchParams.get('code');
 
+  // 0. Catch-all for prefixed auth callbacks (e.g. /forgot-password/auth/callback)
+  // This handles cases where the redirect URL was incorrectly prefixed.
+  if (pathname !== '/auth/callback' && pathname.endsWith('/auth/callback')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/callback';
+    return NextResponse.redirect(url);
+  }
+
   // 1. Global PKCE Code Exchange: If a 'code' is present in the URL, exchange it
   // for a session immediately. This handles Magic Links or Invites that might
   // land on the home page or other routes directly.

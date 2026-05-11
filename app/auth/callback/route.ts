@@ -17,7 +17,9 @@ export async function GET(request: Request) {
     }
   }
 
-  // If something goes wrong, return the user to an error page with instructions
-  // We can also redirect to the sign-in page with an error message
-  return NextResponse.redirect(`${origin}/sign-in?error=auth_callback_failed`);
+
+
+  // If no code is present, it might be an Implicit Flow (fragment-based).
+  // Redirect to the "next" destination and let the client-side handle it.
+  return NextResponse.redirect(`${origin}${next}`);
 }
