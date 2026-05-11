@@ -36,7 +36,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
       {/* Table Header Row */}
       <div className="table-toolbar">
         <h2 className="text-18 font-semibold text-gray-900 tracking-tight">
-          Borrower Database
+          Client List
           <span className="ml-2 text-14 font-normal text-gray-400">({filtered.length})</span>
         </h2>
         <div className="search-box">

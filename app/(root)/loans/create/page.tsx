@@ -39,30 +39,34 @@ export default async function CreateLoanPage({ searchParams }: { searchParams: P
       documentFile: documentFile || undefined
     });
 
-    if (result && 'error' in result && result.error === 'CREDIT_REJECTED') {
-      redirect(`/loans/create?error=credit_rejected`);
-    } else if (result && '$id' in result) {
-      redirect(`/loans/${result.$id}`);
+    if (result && '$id' in result) {
+      // Redirect to loan — include high-risk flag so detail page shows the badge
+      const dest = result.isHighRisk
+        ? `/loans/${result.$id}?warn=high_risk`
+        : `/loans/${result.$id}`;
+      redirect(dest);
     }
+    // Fallback: stay on the page
+    redirect('/loans/create');
   };
 
   return (
     <section className="home-content">
       <header className="mb-6">
         <HeaderBox
-          title="Loan Origination"
-          subtext="Initiate a new credit facility for a verified borrower."
+          title="Loan Application"
+          subtext="Initiate a new loan for a verified borrower."
         />
       </header>
 
       {params?.error === 'credit_rejected' && (
-        <div style={{ display: 'flex', gap: '0.875rem', padding: '1rem 1.25rem', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '0.875rem', marginBottom: '1.5rem' }}>
-          <div style={{ flexShrink: 0, width: '2rem', height: '2rem', background: '#FEE2E2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#B91C1C' }}>
-            ⛔
+        <div style={{ display: 'flex', gap: '0.875rem', padding: '1rem 1.25rem', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '0.875rem', marginBottom: '1.5rem' }}>
+          <div style={{ flexShrink: 0, width: '2rem', height: '2rem', background: '#FEF3C7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            ⚠️
           </div>
           <div>
-            <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#B91C1C' }}>Action Denied — High-Risk Client</p>
-            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#991B1B', lineHeight: 1.5 }}>This client currently has an active Overdue or Defaulted loan. System policy blocks new originations until their credit record is cleared.</p>
+            <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#92400E' }}>High-Risk Client — Mandatory Review Required</p>
+            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#78350F', lineHeight: 1.5 }}>This client has an existing Overdue or Defaulted loan. The facility will still be originated as <strong>Pending</strong> and flagged for admin approval before disbursement.</p>
           </div>
         </div>
       )}
@@ -246,7 +250,7 @@ export default async function CreateLoanPage({ searchParams }: { searchParams: P
           {/* Actions */}
           <div className="flex justify-end pt-2">
             <button type="submit" className="btn-submit">
-              <span>Originate Facility</span>
+              <span>Create Loan</span>
               <ArrowRight className="size-4 opacity-70" />
             </button>
           </div>

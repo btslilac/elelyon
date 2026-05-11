@@ -2166,6 +2166,7 @@ body {
 /* ============================================
    STATEMENT / PRINT PAGE
    ============================================ */
+
 .statement-wrapper {
   background: #F8F9FA;
   min-height: 100vh;
@@ -2570,6 +2571,7 @@ body {
   }
 }
 
+
 /* ── Loan Detail Page 2-col responsive layout ── */
 .loan-detail-layout {
   grid-template-columns: 1fr;
@@ -2674,9 +2676,17 @@ body {
   line-height: 1.2;
 }
 
-.kpi-value-success { color: #047857; }
-.kpi-value-danger  { color: #B91C1C; }
-.kpi-value-warning { color: #B45309; }
+.kpi-value-success {
+  color: #047857;
+}
+
+.kpi-value-danger {
+  color: #B91C1C;
+}
+
+.kpi-value-warning {
+  color: #B45309;
+}
 
 .kpi-sub {
   font-size: 0.6875rem;
@@ -2797,10 +2807,29 @@ body {
   z-index: 1;
 }
 
-.timeline-dot-repayment { background: #ECFDF5; color: #047857; border: 1px solid #D1FAE5; }
-.timeline-dot-penalty   { background: #FEF2F2; color: #B91C1C; border: 1px solid #FEE2E2; }
-.timeline-dot-loan      { background: #EFF6FF; color: #1D4ED8; border: 1px solid #DBEAFE; }
-.timeline-dot-system    { background: #F3F4F6; color: #6B7280; border: 1px solid #E5E7EB; }
+.timeline-dot-repayment {
+  background: #ECFDF5;
+  color: #047857;
+  border: 1px solid #D1FAE5;
+}
+
+.timeline-dot-penalty {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid #FEE2E2;
+}
+
+.timeline-dot-loan {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #DBEAFE;
+}
+
+.timeline-dot-system {
+  background: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #E5E7EB;
+}
 
 .timeline-content {
   flex: 1;
@@ -2859,6 +2888,7 @@ body {
     opacity: 0;
     transform: translateY(16px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -2955,9 +2985,13 @@ body {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.form-input::placeholder { color: #9CA3AF; }
+.form-input::placeholder {
+  color: #9CA3AF;
+}
 
-.form-input:hover { border-color: #D1D5DB; }
+.form-input:hover {
+  border-color: #D1D5DB;
+}
 
 .form-input:focus {
   border-color: #111113;
@@ -3009,7 +3043,9 @@ body {
   line-height: 1.5;
 }
 
-.form-textarea::placeholder { color: #9CA3AF; }
+.form-textarea::placeholder {
+  color: #9CA3AF;
+}
 
 .form-textarea:focus {
   border-color: #111113;
@@ -3044,12 +3080,15 @@ body {
   transition: all 0.15s ease;
 }
 
-.toggle-btn:hover { color: #111113; background: rgba(255,255,255,0.6); }
+.toggle-btn:hover {
+  color: #111113;
+  background: rgba(255, 255, 255, 0.6);
+}
 
 .toggle-btn-active {
   background: #FFFFFF;
   color: #111113;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* ── Preview box ── */
@@ -3070,8 +3109,13 @@ body {
 
 /* ── Auth spinner ── */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .auth-spinner {

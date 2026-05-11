@@ -22,7 +22,7 @@ const Home = async () => {
       <header className="page-header">
         <HeaderBox
           type="greeting"
-          title="Overview"
+          title="Hello"
           user={loggedIn?.firstName || 'User'}
           subtext="Monitor active loans, collections, and recent loans."
         />
@@ -92,9 +92,9 @@ const Home = async () => {
       {/* Recent Activity Table */}
       <div className="flex flex-col gap-5 mt-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-18 font-semibold text-gray-900 tracking-tight">Recent Originations</h2>
+          <h2 className="text-18 font-semibold text-gray-900 tracking-tight">Recent Loans</h2>
           <Link href="/loans" className="btn-ghost">
-            View All Portfolio
+            View All Loans
             <ChevronRight className="size-4" />
           </Link>
         </div>
@@ -163,7 +163,7 @@ const Home = async () => {
                     <td colSpan={5} className="data-empty-cell">
                       <div className="data-empty">
                         <CreditCard className="size-8 text-gray-300" />
-                        <p className="text-14 text-gray-600 font-medium mt-2">No recent originations</p>
+                        <p className="text-14 text-gray-600 font-medium mt-2">No recent Loans</p>
                         <p className="text-12 text-gray-400">Originated loans will appear here.</p>
                       </div>
                     </td>

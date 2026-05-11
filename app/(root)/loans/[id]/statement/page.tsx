@@ -6,7 +6,6 @@ import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { formatAmount, cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
-import { Landmark } from "lucide-react";
 import PrintButton from "@/components/PrintButton";
 
 export default async function StatementPage({
@@ -420,7 +419,7 @@ export default async function StatementPage({
               <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#374151" }}>
                 {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "Finance Officer"}
               </p>
-              <p style={{ fontSize: "0.6875rem", color: "#9CA3AF" }}>El Elyon Financial Services</p>
+              <p style={{ fontSize: "0.6875rem", color: "#9CA3AF" }}>El Elyon Credit & Capital Solutions</p>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>

@@ -16,7 +16,7 @@ export default async function LoanDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; warn?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -62,33 +62,28 @@ export default async function LoanDetailPage({
   // Server actions for approve/deny
   const handleApprove = async () => {
     "use server";
-    try {
-      const result = await approveLoan(id);
-      if (!result) {
-        // approveLoan returned null — likely MAKER_CHECKER_VIOLATION
-        redirect(`/loans/${id}?error=maker_checker`);
-      }
-    } catch {
-      redirect(`/loans/${id}?error=maker_checker`);
-    }
+    await approveLoan(id);
     revalidatePath(`/loans/${id}`);
+    redirect(`/loans/${id}`);
   };
 
   const handleDeny = async () => {
     "use server";
     await denyLoan(id);
     revalidatePath(`/loans/${id}`);
+    redirect(`/loans/${id}`);
   };
 
   return (
     <section className="home-content animate-fade-in">
-      {/* Maker-checker violation banner */}
-      {sp?.error === 'maker_checker' && (
+
+      {/* High-Risk Client Banner — shown when loan is flagged or freshly created from a risky client */}
+      {(loan.isHighRisk || sp?.warn === 'high_risk') && (
         <div style={{ display: 'flex', gap: '0.875rem', padding: '1rem 1.25rem', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '0.875rem', marginBottom: '0.75rem' }}>
-          <span style={{ fontSize: '1.25rem' }}>⚖️</span>
+          <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>⚠️</span>
           <div>
-            <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#92400E' }}>Maker-Checker Violation</p>
-            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#78350F', lineHeight: 1.5 }}>You originated this loan and cannot approve it yourself. A different officer must complete the underwriting decision.</p>
+            <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#92400E' }}>High-Risk Client — Pending Admin Approval</p>
+            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#78350F', lineHeight: 1.5 }}>This borrower has an existing Overdue or Defaulted loan. This facility has been flagged and must be reviewed and approved by an admin before disbursement.</p>
           </div>
         </div>
       )}

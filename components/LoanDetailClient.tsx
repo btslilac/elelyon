@@ -259,10 +259,10 @@ export default function LoanDetailClient({
             <h2 className="section-heading">Repayment History</h2>
             <div className="data-table-wrap">
               <div className="data-table-scroll">
-                <table className="data-table" style={{ minWidth: '480px' }}>
+                <table className="data-table" style={{ minWidth: '600px' }}>
                   <colgroup>
-                    <col style={{ width: '25%' }} />
-                    <col style={{ width: '25%' }} />
+                    <col style={{ width: '22%' }} />
+                    <col style={{ width: '28%' }} />
                     <col style={{ width: '25%' }} />
                     <col style={{ width: '25%' }} />
                   </colgroup>
@@ -322,13 +322,13 @@ export default function LoanDetailClient({
             </div>
             <div className="data-table-wrap">
               <div className="data-table-scroll">
-                <table className="data-table" style={{ minWidth: '560px' }}>
+                <table className="data-table" style={{ minWidth: '760px' }}>
                   <colgroup>
-                    <col style={{ width: '18%' }} />
-                    <col style={{ width: '22%' }} />
                     <col style={{ width: '15%' }} />
+                    <col style={{ width: '18%' }} />
+                    <col style={{ width: '20%' }} />
                     <col style={{ width: '25%' }} />
-                    <col style={{ width: '10%' }} />
+                    <col style={{ width: '12%' }} />
                     <col style={{ width: '10%' }} />
                   </colgroup>
                   <thead>

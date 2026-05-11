@@ -1,13 +1,22 @@
 "use server";
 
-import { ID, Query } from "node-appwrite";
-import { createAdminClient } from "../appwrite";
+import { createSupabaseAdminClient } from "../supabase";
 import { parseStringify } from "../utils";
 
-const {
-  APPWRITE_DATABASE_ID: DATABASE_ID,
-  APPWRITE_AUDIT_COLLECTION_ID: AUDIT_COLLECTION_ID,
-} = process.env;
+function mapAuditRow(row: any): AuditLog {
+  return {
+    $id: row.id,
+    $createdAt: row.created_at,
+    loanId: row.loan_id,
+    entityType: row.entity_type,
+    action: row.action,
+    performedBy: row.performed_by,
+    description: row.description,
+    previousValue: row.previous_value,
+    newValue: row.new_value,
+    timestamp: row.timestamp,
+  };
+}
 
 export const logAuditEvent = async ({
   loanId,
@@ -26,33 +35,30 @@ export const logAuditEvent = async ({
   description: string;
   previousValue?: string;
   newValue?: string;
-  /** Appwrite auth userId — required by collection schema */
   userId?: string;
 }) => {
   try {
-    // If audit collection is not configured, fail silently — don't block core operations
-    if (!AUDIT_COLLECTION_ID) return null;
+    const supabase = createSupabaseAdminClient();
 
-    const { database } = await createAdminClient();
-
-    const log = await database.createDocument(
-      DATABASE_ID!,
-      AUDIT_COLLECTION_ID,
-      ID.unique(),
-      {
-        loanId,
-        entityType,
+    const { data, error } = await supabase
+      .from("audit_logs")
+      .insert({
+        loan_id: loanId,
+        entity_type: entityType,
         action,
-        performedBy,
+        performed_by: performedBy,
         description,
-        previousValue: previousValue ?? "",
-        newValue: newValue ?? "",
+        previous_value: previousValue ?? "",
+        new_value: newValue ?? "",
         timestamp: new Date().toISOString(),
-        userId: userId || "system",
-      }
-    );
+        user_id: userId ?? "system",
+      })
+      .select()
+      .single();
 
-    return parseStringify(log);
+    if (error) throw error;
+
+    return parseStringify(mapAuditRow(data));
   } catch (error) {
     // Audit logging must never crash the calling operation
     console.warn("Audit log failed (non-critical):", error);
@@ -62,17 +68,18 @@ export const logAuditEvent = async ({
 
 export const getAuditLogsByLoan = async (loanId: string): Promise<AuditLog[]> => {
   try {
-    if (!AUDIT_COLLECTION_ID) return [];
+    const supabase = createSupabaseAdminClient();
 
-    const { database } = await createAdminClient();
+    const { data, error } = await supabase
+      .from("audit_logs")
+      .select("*")
+      .eq("loan_id", loanId)
+      .order("timestamp", { ascending: false })
+      .limit(100);
 
-    const logs = await database.listDocuments(
-      DATABASE_ID!,
-      AUDIT_COLLECTION_ID,
-      [Query.equal("loanId", loanId), Query.orderDesc("timestamp"), Query.limit(100)]
-    );
+    if (error) throw error;
 
-    return parseStringify(logs.documents) as AuditLog[];
+    return parseStringify((data ?? []).map(mapAuditRow)) as AuditLog[];
   } catch (error) {
     console.error("Error fetching audit logs:", error);
     return [];

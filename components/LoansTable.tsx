@@ -39,7 +39,7 @@ export default function LoansTable({ loans }: { loans: Loan[] }) {
       {/* Table Toolbar */}
       <div className="table-toolbar">
         <h2 className="text-18 font-semibold text-gray-900 tracking-tight">
-          All Originations
+          All Loans
           <span className="ml-2 text-14 font-normal text-gray-400">({filtered.length})</span>
         </h2>
         <div className="flex items-center gap-3 flex-wrap">

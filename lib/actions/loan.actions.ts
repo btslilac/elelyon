@@ -1,64 +1,70 @@
 "use server";
 
-import { ID, Query } from "node-appwrite";
-import { InputFile } from "node-appwrite/file";
-import { createAdminClient } from "../appwrite";
+import { createSupabaseAdminClient } from "../supabase";
 import { parseStringify } from "../utils";
 import { InterestCalculator } from "../interest";
 import { revalidatePath } from "next/cache";
 import { getLoggedInUser } from "./user.actions";
 import { logAuditEvent } from "./audit.actions";
 
-const {
-  APPWRITE_DATABASE_ID: DATABASE_ID,
-  APPWRITE_LOAN_COLLECTION_ID: LOAN_COLLECTION_ID,
-  APPWRITE_CLIENT_COLLECTION_ID: CLIENT_COLLECTION_ID,
-} = process.env;
+function mapLoanRow(row: any): Loan {
+  return {
+    $id: row.id,
+    $createdAt: row.created_at,
+    clientId: row.client_id,
+    principalAmount: row.principal_amount,
+    interestRate: row.interest_rate,
+    interestType: row.interest_type,
+    durationInMonths: row.duration_in_months,
+    startDate: row.start_date,
+    dueDate: row.due_date,
+    totalInterest: row.total_interest,
+    totalPayable: row.total_payable,
+    balance: row.balance,
+    status: row.status,
+    penaltyAccrued: row.penalty_accrued ?? 0,
+    loanType: row.loan_type,
+    securities: row.securities,
+    guarantorName: row.guarantor_name,
+    guarantorPhone: row.guarantor_phone,
+    guarantorId: row.guarantor_id,
+    installmentAmount: row.installment_amount,
+    documentUrl: row.document_url,
+    createdBy: row.created_by,
+    isHighRisk: row.is_high_risk ?? false,
+    // enriched fields (populated by callers)
+    clientName: row.clientName,
+    clientEmail: row.clientEmail,
+    clientPhone: row.clientPhone,
+  };
+}
 
 /**
- * Auto-flag ALL Active loans that have passed their due date → Overdue.
- * Called at the start of getLoans() and getLoanById() for real-time detection.
- * Runs silently — never throws so it can't break the calling page.
+ * Auto-flag Active loans past their due_date → Overdue.
+ * Single-query UPDATE — far more efficient than the old N+1 Appwrite approach.
  */
 export const autoFlagOverdueLoans = async (specificLoanId?: string): Promise<number> => {
   try {
-    const { database } = await createAdminClient();
+    const supabase = createSupabaseAdminClient();
     const now = new Date().toISOString();
 
-    // Build query: Active loans with dueDate strictly before now
-    const queries = [
-      Query.equal("status", ["Active"]),
-      Query.lessThan("dueDate", now),
-      Query.limit(200),
-      Query.select(["$id"]),
-    ];
+    let query = supabase
+      .from("loans")
+      .update({ status: "Overdue" })
+      .eq("status", "Active")
+      .lt("due_date", now)
+      .select("id");
 
-    // If called for a specific loan, narrow the query
     if (specificLoanId) {
-      queries.push(Query.equal("$id", specificLoanId));
+      query = (query as any).eq("id", specificLoanId);
     }
 
-    const result = await database.listDocuments(DATABASE_ID!, LOAN_COLLECTION_ID!, queries);
+    const { data, error } = await query;
+    if (error) throw error;
 
-    if (result.total === 0) return 0;
-
-    // Batch-update all found loans to Overdue in parallel
-    await Promise.all(
-      result.documents.map((loan) =>
-        database.updateDocument(DATABASE_ID!, LOAN_COLLECTION_ID!, loan.$id, {
-          status: "Overdue",
-        })
-      )
-    );
-
-    // Revalidate paths so cached pages pick up the change
-    revalidatePath("/loans");
-    revalidatePath("/");
-    if (specificLoanId) revalidatePath(`/loans/${specificLoanId}`);
-
-    return result.total;
+    const count = data?.length ?? 0;
+    return count;
   } catch (error) {
-    // Non-critical — never crash the calling page
     console.warn("[autoFlagOverdueLoans] failed (non-critical):", error);
     return 0;
   }
@@ -82,88 +88,82 @@ export const createLoan = async (loanData: {
     const currentUser = await getLoggedInUser();
     if (!currentUser) throw new Error("UNAUTHORIZED: You must be logged in to create a loan.");
 
-    const { database, storage } = await createAdminClient();
+    const supabase = createSupabaseAdminClient();
 
-    // 1. Zero-Loss Credit Check: Prevent lending to defaulters
-    // Query directly by clientId + bad statuses — avoids the 25-doc default limit bug
-    const badCreditCheck = await database.listDocuments(
-      DATABASE_ID!,
-      LOAN_COLLECTION_ID!,
-      [
-        Query.equal("clientId", loanData.clientId),
-        Query.equal("status", ["Overdue", "Defaulted"]),
-        Query.limit(1),
-      ]
-    );
+    // High-Risk Credit Check: detect clients with Overdue/Defaulted loans.
+    // Policy: allow origination but flag the loan for mandatory admin review.
+    const { data: badCredit } = await supabase
+      .from("loans")
+      .select("id")
+      .eq("client_id", loanData.clientId)
+      .in("status", ["Overdue", "Defaulted"])
+      .limit(1);
 
-    if (badCreditCheck.total > 0) {
-      return { error: "CREDIT_REJECTED" };
-    }
+    const isHighRisk = !!(badCredit && badCredit.length > 0);
 
-    let financialData;
-    if (loanData.interestType === "Flat") {
-      financialData = InterestCalculator.calculateFlatRate(
-        loanData.principalAmount,
-        loanData.interestRate,
-        loanData.durationInMonths
-      );
-    } else {
-      financialData = InterestCalculator.calculateReducingBalance(
-        loanData.principalAmount,
-        loanData.interestRate,
-        loanData.durationInMonths
-      );
-    }
+    // Calculate financials
+    const financialData =
+      loanData.interestType === "Flat"
+        ? InterestCalculator.calculateFlatRate(loanData.principalAmount, loanData.interestRate, loanData.durationInMonths)
+        : InterestCalculator.calculateReducingBalance(loanData.principalAmount, loanData.interestRate, loanData.durationInMonths);
 
-    // Calculate dates based on optional provided startDate or default to today
-    const initialStartDate = loanData.startDate ? new Date(loanData.startDate) : new Date();
-    const initialDueDate = new Date(initialStartDate);
-    initialDueDate.setMonth(initialStartDate.getMonth() + loanData.durationInMonths);
-
-    // Extract startDate & documentFile so they don't get spread into Appwrite DB directly
-    const { startDate, documentFile, ...restLoanData } = loanData;
+    const startDate = loanData.startDate ? new Date(loanData.startDate) : new Date();
+    const dueDate = new Date(startDate);
+    dueDate.setMonth(startDate.getMonth() + loanData.durationInMonths);
 
     const installmentAmount = Math.round((financialData.totalPayable / loanData.durationInMonths) * 100) / 100;
 
-    let documentUrl = undefined;
+    // File upload to Supabase Storage
+    let documentUrl: string | undefined;
+    if (loanData.documentFile && loanData.documentFile.size > 0) {
+      const fileExt = loanData.documentFile.name.split(".").pop();
+      const filePath = `loan-docs/${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("loan-documents")
+        .upload(filePath, loanData.documentFile);
 
-    if (documentFile && documentFile.size > 0) {
-      const buffer = Buffer.from(await documentFile.arrayBuffer());
-      const inputFile = InputFile.fromBuffer(buffer, documentFile.name);
-
-      const uploadedFile = await storage.createFile(
-        process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!,
-        ID.unique(),
-        inputFile
-      );
-
-      // Construct view URL
-      documentUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID}/files/${uploadedFile.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`;
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from("loan-documents")
+          .getPublicUrl(filePath);
+        documentUrl = urlData.publicUrl;
+      }
     }
 
-    const newLoan = await database.createDocument(
-      DATABASE_ID!,
-      LOAN_COLLECTION_ID!,
-      ID.unique(),
-      {
-        ...restLoanData,
+    const { data, error } = await supabase
+      .from("loans")
+      .insert({
+        client_id: loanData.clientId,
+        principal_amount: loanData.principalAmount,
+        interest_rate: loanData.interestRate,
+        interest_type: loanData.interestType,
+        duration_in_months: loanData.durationInMonths,
+        loan_type: loanData.loanType,
+        securities: loanData.securities,
+        guarantor_name: loanData.guarantorName,
+        guarantor_phone: loanData.guarantorPhone,
+        guarantor_id: loanData.guarantorId,
         status: "Pending",
-        totalInterest: financialData.totalInterest,
-        totalPayable: financialData.totalPayable,
+        total_interest: financialData.totalInterest,
+        total_payable: financialData.totalPayable,
         balance: Math.round(financialData.totalPayable * 100) / 100,
-        installmentAmount,
-        penaltyAccrued: 0,
-        startDate: initialStartDate.toISOString(),
-        dueDate: initialDueDate.toISOString(),
-        ...(documentUrl && { documentUrl }),
-        createdBy: currentUser.$id
-      }
-    );
+        installment_amount: installmentAmount,
+        penalty_accrued: 0,
+        start_date: startDate.toISOString(),
+        due_date: dueDate.toISOString(),
+        document_url: documentUrl ?? null,
+        created_by: currentUser.$id,
+        is_high_risk: isHighRisk,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath("/");
     revalidatePath("/loans");
 
-    return parseStringify(newLoan);
+    return parseStringify(mapLoanRow(data));
   } catch (error) {
     console.error("Error creating loan", error);
     return null;
@@ -172,43 +172,63 @@ export const createLoan = async (loanData: {
 
 export const updateLoan = async (loanId: string, loanData: any) => {
   try {
-    const { database } = await createAdminClient();
+    const supabase = createSupabaseAdminClient();
 
-    // Recalculate if financial parameters are provided and loan is still Pending
-    if (loanData.principalAmount || loanData.interestRate || loanData.durationInMonths || loanData.interestType) {
-      const currentLoan = await database.getDocument(DATABASE_ID!, LOAN_COLLECTION_ID!, loanId);
+    // Recalculate financials if params changed and loan is still Pending
+    const payload: Record<string, any> = {};
 
-      if (currentLoan.status === 'Pending') {
-        const p = loanData.principalAmount ?? currentLoan.principalAmount;
-        const r = loanData.interestRate ?? currentLoan.interestRate;
-        const d = loanData.durationInMonths ?? currentLoan.durationInMonths;
-        const t = loanData.interestType ?? currentLoan.interestType;
+    if (
+      loanData.principalAmount !== undefined ||
+      loanData.interestRate !== undefined ||
+      loanData.durationInMonths !== undefined ||
+      loanData.interestType !== undefined
+    ) {
+      const { data: current } = await supabase
+        .from("loans")
+        .select("*")
+        .eq("id", loanId)
+        .single();
 
-        let financialData;
-        if (t === "Flat") {
-          financialData = InterestCalculator.calculateFlatRate(p, r, d);
-        } else {
-          financialData = InterestCalculator.calculateReducingBalance(p, r, d);
-        }
+      if (current?.status === "Pending") {
+        const p = loanData.principalAmount ?? current.principal_amount;
+        const r = loanData.interestRate ?? current.interest_rate;
+        const d = loanData.durationInMonths ?? current.duration_in_months;
+        const t = loanData.interestType ?? current.interest_type;
 
-        loanData.totalInterest = financialData.totalInterest;
-        loanData.totalPayable = financialData.totalPayable;
-        loanData.balance = financialData.totalPayable;
+        const fin = t === "Flat"
+          ? InterestCalculator.calculateFlatRate(p, r, d)
+          : InterestCalculator.calculateReducingBalance(p, r, d);
+
+        payload.total_interest = fin.totalInterest;
+        payload.total_payable = fin.totalPayable;
+        payload.balance = fin.totalPayable;
       }
     }
 
-    const updatedLoan = await database.updateDocument(
-      DATABASE_ID!,
-      LOAN_COLLECTION_ID!,
-      loanId,
-      loanData
-    );
+    // Map camelCase → snake_case for any explicitly passed fields
+    if (loanData.status !== undefined) payload.status = loanData.status;
+    if (loanData.principalAmount !== undefined) payload.principal_amount = loanData.principalAmount;
+    if (loanData.interestRate !== undefined) payload.interest_rate = loanData.interestRate;
+    if (loanData.durationInMonths !== undefined) payload.duration_in_months = loanData.durationInMonths;
+    if (loanData.interestType !== undefined) payload.interest_type = loanData.interestType;
+    if (loanData.balance !== undefined) payload.balance = loanData.balance;
+    if (loanData.penaltyAccrued !== undefined) payload.penalty_accrued = loanData.penaltyAccrued;
+    if (loanData.dueDate !== undefined) payload.due_date = loanData.dueDate;
+
+    const { data, error } = await supabase
+      .from("loans")
+      .update(payload)
+      .eq("id", loanId)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath("/");
     revalidatePath("/loans");
     revalidatePath(`/loans/${loanId}`);
 
-    return parseStringify(updatedLoan);
+    return parseStringify(mapLoanRow(data));
   } catch (error) {
     console.error("Error updating loan", error);
     return null;
@@ -222,50 +242,56 @@ export const approveLoan = async (loanId: string) => {
       throw new Error("UNAUTHORIZED: Only Managers or Admins can approve loans.");
     }
 
-    const { database } = await createAdminClient();
+    const supabase = createSupabaseAdminClient();
 
-    // We fetch the loan first for MAKER-CHECKER validation
-    const loan = await database.getDocument(DATABASE_ID!, LOAN_COLLECTION_ID!, loanId);
+    const { data: loan } = await supabase
+      .from("loans")
+      .select("*")
+      .eq("id", loanId)
+      .single();
 
-    // MAKER-CHECKER VALIDATION
-    if (loan.createdBy === currentUser.$id) {
-      throw new Error("MAKER_CHECKER_VIOLATION: You cannot approve a loan you originated.");
+    if (!loan) throw new Error("Loan not found.");
+
+    // ── MAKER-CHECKER FROZEN ─────────────────────────────────────────────────
+    // Uncomment when a second admin is available to enforce separation of duties.
+    // if (loan.created_by === currentUser.$id) {
+    //   throw new Error("MAKER_CHECKER_VIOLATION: You cannot approve a loan you originated.");
+    // }
+    // ────────────────────────────────────────────────────────────────────────
+
+    const { data: updatedLoan, error } = await supabase
+      .from("loans")
+      .update({ status: "Active" })
+      .eq("id", loanId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update client aggregate totals
+    const { data: client } = await supabase
+      .from("clients")
+      .select("total_borrowed, outstanding_balance")
+      .eq("id", loan.client_id)
+      .single();
+
+    if (client) {
+      await supabase
+        .from("clients")
+        .update({
+          total_borrowed: (client.total_borrowed ?? 0) + loan.principal_amount,
+          outstanding_balance: (client.outstanding_balance ?? 0) + loan.total_payable,
+        })
+        .eq("id", loan.client_id);
     }
 
-    const updatedLoan = await database.updateDocument(
-      DATABASE_ID!,
-      LOAN_COLLECTION_ID!,
-      loanId,
-      {
-        status: "Active",
-      }
-    );
-
-    // Update Client aggregate totals
-    const client = await database.getDocument(
-      DATABASE_ID!,
-      CLIENT_COLLECTION_ID!,
-      loan.clientId
-    );
-
-    await database.updateDocument(
-      DATABASE_ID!,
-      CLIENT_COLLECTION_ID!,
-      loan.clientId,
-      {
-        totalBorrowed: (client.totalBorrowed || 0) + loan.principalAmount,
-        outstandingBalance: (client.outstandingBalance || 0) + loan.totalPayable,
-      }
-    );
-
-    // Audit log the approval
     await logAuditEvent({
       loanId,
       entityType: "loan",
       action: "LOAN_APPROVED",
       performedBy: `${currentUser.firstName} ${currentUser.lastName}`,
-      userId: currentUser.$id || currentUser.userId || "system",
-      description: `Loan approved and disbursed by ${currentUser.firstName} ${currentUser.lastName}. Principal: KES ${loan.principalAmount?.toLocaleString()}.`,
+      userId: currentUser.$id ?? currentUser.userId ?? "system",
+      description: `Loan approved and disbursed by ${currentUser.firstName} ${currentUser.lastName}. Principal: KES ${loan.principal_amount?.toLocaleString()}.`,
       previousValue: "Pending",
       newValue: "Active",
     });
@@ -274,7 +300,7 @@ export const approveLoan = async (loanId: string) => {
     revalidatePath("/loans");
     revalidatePath(`/loans/${loanId}`);
 
-    return parseStringify(updatedLoan);
+    return parseStringify(mapLoanRow(updatedLoan));
   } catch (error) {
     console.error("Error approving loan", error);
     return null;
@@ -288,27 +314,30 @@ export const denyLoan = async (loanId: string) => {
       throw new Error("UNAUTHORIZED: Only Managers or Admins can deny loans.");
     }
 
-    const { database } = await createAdminClient();
+    const supabase = createSupabaseAdminClient();
 
-    const loan = await database.getDocument(DATABASE_ID!, LOAN_COLLECTION_ID!, loanId);
+    const { data: loan } = await supabase
+      .from("loans")
+      .select("principal_amount")
+      .eq("id", loanId)
+      .single();
 
-    const updatedLoan = await database.updateDocument(
-      DATABASE_ID!,
-      LOAN_COLLECTION_ID!,
-      loanId,
-      {
-        status: "Denied",
-      }
-    );
+    const { data: updatedLoan, error } = await supabase
+      .from("loans")
+      .update({ status: "Denied" })
+      .eq("id", loanId)
+      .select()
+      .single();
 
-    // Audit log the denial
+    if (error) throw error;
+
     await logAuditEvent({
       loanId,
       entityType: "loan",
       action: "LOAN_DENIED",
       performedBy: `${currentUser.firstName} ${currentUser.lastName}`,
-      userId: currentUser.$id || currentUser.userId || "system",
-      description: `Loan application declined by ${currentUser.firstName} ${currentUser.lastName}. Principal: KES ${loan.principalAmount?.toLocaleString()}.`,
+      userId: currentUser.$id ?? currentUser.userId ?? "system",
+      description: `Loan application declined by ${currentUser.firstName} ${currentUser.lastName}. Principal: KES ${loan?.principal_amount?.toLocaleString()}.`,
       previousValue: "Pending",
       newValue: "Denied",
     });
@@ -317,7 +346,7 @@ export const denyLoan = async (loanId: string) => {
     revalidatePath("/loans");
     revalidatePath(`/loans/${loanId}`);
 
-    return parseStringify(updatedLoan);
+    return parseStringify(mapLoanRow(updatedLoan));
   } catch (error) {
     console.error("Error denying loan", error);
     return null;
@@ -326,55 +355,46 @@ export const denyLoan = async (loanId: string) => {
 
 export const getLoans = async () => {
   try {
-    const { database } = await createAdminClient();
+    const supabase = createSupabaseAdminClient();
 
-    // ── Real-time overdue detection + loans fetch run in PARALLEL ──────────
-    // autoFlagOverdueLoans only writes to Appwrite by $id (no field collision).
-    // Both queries start simultaneously; we wait for both before proceeding,
-    // so the returned loan list always reflects the post-flag status.
-    const [_, loansRaw] = await Promise.all([
+    // Run overdue flag + loans fetch in parallel
+    const [, loansResult] = await Promise.all([
       autoFlagOverdueLoans(),
-      database.listDocuments(
-        DATABASE_ID!,
-        LOAN_COLLECTION_ID!,
-        [
-          Query.orderDesc("$createdAt"),
-          Query.limit(500),
-          Query.select(["$id", "clientId", "loanType", "principalAmount", "balance", "dueDate", "status", "$createdAt"])
-        ]
-      )
+      supabase
+        .from("loans")
+        .select("id, client_id, loan_type, principal_amount, balance, due_date, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
     ]);
-    // ────────────────────────────────────────────────────────────────────────
 
-    // Extract unique client IDs from the freshly-flagged loans
-    const clientIds = [...new Set(loansRaw.documents.map((loan) => loan.clientId))];
+    if (loansResult.error) throw loansResult.error;
+    const loans = loansResult.data ?? [];
 
-    // Fetch client metadata in parallel (independent of the above)
-    let clients = { documents: [] as any[] };
+    // Fetch unique clients in one query
+    const clientIds = [...new Set(loans.map((l) => l.client_id).filter(Boolean))];
+    let clientMap: Record<string, any> = {};
+
     if (clientIds.length > 0) {
-      const clientsRaw = await database.listDocuments(
-        DATABASE_ID!,
-        CLIENT_COLLECTION_ID!,
-        [
-          Query.equal("$id", clientIds),
-          Query.select(["$id", "firstName", "lastName", "email"])
-        ]
-      );
-      clients.documents = clientsRaw.documents as any[];
+      const { data: clients } = await supabase
+        .from("clients")
+        .select("id, first_name, last_name, email")
+        .in("id", clientIds);
+
+      (clients ?? []).forEach((c) => {
+        clientMap[c.id] = c;
+      });
     }
 
-    // Re-fetch loans AFTER the flag so status is always current
-    const enrichedLoans = loansRaw.documents.map((loan: any) => {
-      const client = clients.documents.find((c: any) => c.$id === loan.clientId);
-      return {
+    const enriched = loans.map((loan) => {
+      const c = clientMap[loan.client_id];
+      return mapLoanRow({
         ...loan,
-        // If autoFlag updated this loan to Overdue, reflect that here
-        clientName: client ? `${client.firstName} ${client.lastName}` : "Unknown Client",
-        clientEmail: client ? client.email : "No email",
-      };
+        clientName: c ? `${c.first_name} ${c.last_name}` : "Unknown Client",
+        clientEmail: c ? c.email : "No email",
+      });
     });
 
-    return parseStringify(enrichedLoans);
+    return parseStringify(enriched);
   } catch (error) {
     console.error("Error fetching loans", error);
     return null;
@@ -383,33 +403,32 @@ export const getLoans = async () => {
 
 export const getLoanById = async (loanId: string) => {
   try {
-    const { database } = await createAdminClient();
+    const supabase = createSupabaseAdminClient();
 
-    // ── Real-time overdue detection for this specific loan ──────────────────
     await autoFlagOverdueLoans(loanId);
-    // ────────────────────────────────────────────────────────────────────────
 
-    // Fetch AFTER the flag so the returned status is always current
-    const loan = await database.getDocument(
-      DATABASE_ID!,
-      LOAN_COLLECTION_ID!,
-      loanId
+    const { data: loan, error } = await supabase
+      .from("loans")
+      .select("*")
+      .eq("id", loanId)
+      .single();
+
+    if (error) throw error;
+
+    const { data: client } = await supabase
+      .from("clients")
+      .select("first_name, last_name, email, phone")
+      .eq("id", loan.client_id)
+      .single();
+
+    return parseStringify(
+      mapLoanRow({
+        ...loan,
+        clientName: client ? `${client.first_name} ${client.last_name}` : "Unknown",
+        clientEmail: client?.email ?? "",
+        clientPhone: client?.phone ?? "",
+      })
     );
-
-    const client = await database.getDocument(
-      DATABASE_ID!,
-      CLIENT_COLLECTION_ID!,
-      loan.clientId
-    );
-
-    const enrichedLoan = {
-      ...loan,
-      clientName: `${client.firstName} ${client.lastName}`,
-      clientEmail: client.email,
-      clientPhone: client.phone,
-    };
-
-    return parseStringify(enrichedLoan);
   } catch (error) {
     console.error("Error fetching loan by ID", error);
     return null;
@@ -418,29 +437,27 @@ export const getLoanById = async (loanId: string) => {
 
 export const getLoanMetrics = async () => {
   try {
-    const { database } = await createAdminClient();
-    // Note: autoFlagOverdueLoans is NOT called here — it already ran in
-    // getLoans() on the same request (home page calls them in Promise.all).
-    // Calling it twice would double the Appwrite write cost for no benefit.
-    const loans = await database.listDocuments(DATABASE_ID!, LOAN_COLLECTION_ID!);
+    const supabase = createSupabaseAdminClient();
+
+    const { data: loans, error } = await supabase
+      .from("loans")
+      .select("principal_amount, balance, status");
+
+    if (error) throw error;
 
     let totalDisbursed = 0;
     let totalOutstanding = 0;
     let activeCount = 0;
 
-    loans.documents.forEach(loan => {
-      if (loan.status !== 'Pending' && loan.status !== 'Denied') {
-        totalDisbursed += loan.principalAmount;
-        totalOutstanding += loan.balance;
+    (loans ?? []).forEach((loan) => {
+      if (loan.status !== "Pending" && loan.status !== "Denied") {
+        totalDisbursed += loan.principal_amount ?? 0;
+        totalOutstanding += loan.balance ?? 0;
       }
-      if (loan.status === 'Active') activeCount++;
+      if (loan.status === "Active") activeCount++;
     });
 
-    return {
-      totalDisbursed,
-      totalOutstanding,
-      loanCount: activeCount,
-    };
+    return { totalDisbursed, totalOutstanding, loanCount: activeCount };
   } catch (error) {
     console.error("Error fetching metrics", error);
     return { totalDisbursed: 0, totalOutstanding: 0, loanCount: 0 };

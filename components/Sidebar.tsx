@@ -6,12 +6,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import Footer from './Footer'
-import { LayoutDashboard, Users, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Users, CreditCard, BarChart2 } from 'lucide-react'
 
 const iconMap: Record<string, React.ElementType> = {
   '/': LayoutDashboard,
   '/clients': Users,
   '/loans': CreditCard,
+  '/reports': BarChart2,
 }
 
 const Sidebar = ({ user }: SiderbarProps) => {

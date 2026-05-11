@@ -100,6 +100,7 @@ declare type LMSClient = {
 
 declare type Loan = {
   $id: string;
+  $createdAt?: string;
   clientId: string;
   principalAmount: number;
   interestRate: number;
@@ -130,6 +131,7 @@ declare type Loan = {
 
 declare type Repayment = {
   $id: string;
+  $createdAt?: string;
   loanId: string;
   clientId: string;
   amount: number;
@@ -154,6 +156,7 @@ declare type Penalty = {
 
 declare type AuditLog = {
   $id: string;
+  $createdAt?: string;
   loanId: string;
   entityType: string;
   action: AuditAction;

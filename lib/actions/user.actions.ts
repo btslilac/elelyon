@@ -1,172 +1,249 @@
-'use server';
+"use server";
 
-import { ID, Query } from "node-appwrite";
-import { createAdminClient, createSessionClient } from "../appwrite";
-import { cookies } from "next/headers";
+import { createSupabaseServerClient, createSupabaseAdminClient } from "../supabase";
 import { parseStringify } from "../utils";
+import { cookies } from "next/headers";
 
-const {
-  APPWRITE_DATABASE_ID: DATABASE_ID,
-  APPWRITE_USER_COLLECTION_ID: USER_COLLECTION_ID,
-} = process.env;
+// ─── Row → Domain mappers ────────────────────────────────────────────────────
+
+function mapUserRow(row: any): User | null {
+  if (!row) return null;
+  return {
+    $id: row.id,
+    userId: row.auth_id,
+    email: row.email,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    name: `${row.first_name} ${row.last_name}`,
+    role: row.role,
+    userStatus: row.user_status,
+  } as any;
+}
+
+// ─── getUserInfo ─────────────────────────────────────────────────────────────
 
 export const getUserInfo = async ({ userId }: getUserInfoProps) => {
   try {
-    const { database } = await createAdminClient();
+    const supabase = createSupabaseAdminClient();
 
-    const user = await database.listDocuments(
-      DATABASE_ID!,
-      USER_COLLECTION_ID!,
-      [Query.equal('userId', [userId])]
-    )
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("auth_id", userId)
+      .maybeSingle();
 
-    if (user.total === 0) return null;
-    return parseStringify(user.documents[0]);
+    if (error || !data) return null;
+    return parseStringify(mapUserRow(data));
   } catch (error) {
-    console.log('getUserInfo error:', error)
+    console.error("getUserInfo error:", error);
     return null;
   }
-}
+};
+
+// ─── signIn ──────────────────────────────────────────────────────────────────
 
 export const signIn = async ({ email, password }: signInProps) => {
   try {
-    const { account, database, user: userService } = await createAdminClient();
-    const session = await account.createEmailPasswordSession(email, password);
+    const supabase = await createSupabaseServerClient();
 
-    (await cookies()).set("appwrite-session", session.secret, {
-      path: "/",
-      httpOnly: true,
-      sameSite: "strict",
-      secure: true,
-    });
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({ email, password });
 
-    const user = await getUserInfo({ userId: session.userId });
+    if (authError || !authData.session) {
+      console.error("signIn auth error:", authError);
+      return null;
+    }
 
-    let dbUser = user;
+    const adminSupabase = createSupabaseAdminClient();
+    let { data: userRow } = await adminSupabase
+      .from("users")
+      .select("*")
+      .eq("auth_id", authData.user.id)
+      .maybeSingle();
 
-    if (!user) {
-      console.warn('No user document found for userId:', session.userId, 'Attempting auto-recovery.');
-      try {
-        const authUser = await userService.get(session.userId);
-        const nameParts = authUser.name ? authUser.name.split(" ") : ["System", "Admin"];
-        
-        dbUser = await database.createDocument(
-          DATABASE_ID!,
-          USER_COLLECTION_ID!,
-          ID.unique(),
-          {
-            email: authUser.email,
-            firstName: nameParts[0],
-            lastName: nameParts.slice(1).join(" ") || "User",
-            userId: session.userId,
-            userStatus: 'active',
-            role: 'ADMIN' // Recovered/Manually created users get ADMIN access safely
-          }
-        );
-      } catch (err) {
-        console.error("Failed to auto-recover user document", err);
+    // Auto-recovery: if no profile document exists, create one
+    if (!userRow) {
+      console.warn(
+        "No user profile found for auth_id:",
+        authData.user.id,
+        "— attempting auto-recovery."
+      );
+      const meta = authData.user.user_metadata ?? {};
+      const nameParts = (authData.user.email ?? "System User").split("@");
+      const firstName = meta.first_name ?? meta.firstName ?? nameParts[0] ?? "System";
+      const lastName = meta.last_name ?? meta.lastName ?? "Admin";
+
+      const { data: recovered, error: recoverError } = await adminSupabase
+        .from("users")
+        .insert({
+          auth_id: authData.user.id,
+          email: authData.user.email,
+          first_name: firstName,
+          last_name: lastName,
+          role: "ADMIN",
+          user_status: "active",
+        })
+        .select()
+        .single();
+
+      if (recoverError) {
+        console.error("Auto-recovery failed:", recoverError);
         return null;
       }
+      userRow = recovered;
     }
 
-    // Fail-safe: Auto-grant ADMIN to the owner's email if they accidentally locked themselves out
-    if (dbUser && dbUser.email === 'timtheesam@gmail.com' && dbUser.role !== 'ADMIN') {
-      try {
-        dbUser = await database.updateDocument(
-          DATABASE_ID!,
-          USER_COLLECTION_ID!,
-          dbUser.$id,
-          { role: 'ADMIN' }
-        );
+    // Fail-safe: auto-grant ADMIN to the owner's email
+    if (userRow && userRow.email === "timtheesam@gmail.com" && userRow.role !== "ADMIN") {
+      const { data: escalated } = await adminSupabase
+        .from("users")
+        .update({ role: "ADMIN" })
+        .eq("id", userRow.id)
+        .select()
+        .single();
+      if (escalated) {
+        userRow = escalated;
         console.log("Auto-escalated timtheesam@gmail.com to ADMIN.");
-      } catch (err) {
-        console.error("Failed to auto-escalate owner role.", err);
       }
     }
 
-    return parseStringify(dbUser);
+    return parseStringify(mapUserRow(userRow));
   } catch (error) {
-    console.error('signIn Error:', error);
+    console.error("signIn Error:", error);
     return null;
   }
-}
+};
+
+// ─── signUp ──────────────────────────────────────────────────────────────────
 
 export const signUp = async ({ password, ...userData }: SignUpParams) => {
   const { email, firstName, lastName } = userData;
 
-  let newUserAccount;
-
   try {
-    const { account, database, user: userService } = await createAdminClient();
+    const adminSupabase = createSupabaseAdminClient();
 
-    newUserAccount = await account.create(
-      ID.unique(),
-      email,
-      password,
-      `${firstName} ${lastName}`
-    );
-
-    if (!newUserAccount) throw new Error('Error creating user account');
-
-    try {
-      const newUserProfile = await database.createDocument(
-        DATABASE_ID!,
-        USER_COLLECTION_ID!,
-        ID.unique(),
-        {
-          email: email,
-          firstName: firstName,
-          lastName: lastName,
-          userId: newUserAccount.$id, // This is required for getUserInfo to work
-          userStatus: 'active',
-        }
-      );
-
-      const session = await account.createEmailPasswordSession(email, password);
-
-      (await cookies()).set("appwrite-session", session.secret, {
-        path: "/",
-        httpOnly: true,
-        sameSite: "strict",
-        secure: true,
+    // 1. Create auth user (pre-confirmed so no email verification needed)
+    const { data: authData, error: authError } =
+      await adminSupabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { first_name: firstName, last_name: lastName },
       });
 
-      // Fixed: returning newUserProfile instead of undefined 'newUser'
-      return parseStringify(newUserProfile);
-    } catch (docError) {
-      console.error('Document creation failed, rolling back auth account:', docError);
-      await userService.delete(newUserAccount.$id);
-      throw new Error('Failed to create user profile. Please check your Appwrite collection configuration.');
+    if (authError || !authData.user) {
+      throw new Error(authError?.message ?? "Error creating auth user");
     }
+
+    // 2. Create user profile row
+    const { data: profileRow, error: profileError } = await adminSupabase
+      .from("users")
+      .insert({
+        auth_id: authData.user.id,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        role: "STAFF",
+        user_status: "active",
+      })
+      .select()
+      .single();
+
+    if (profileError) {
+      // Rollback: delete the auth user so the DB stays consistent
+      await adminSupabase.auth.admin.deleteUser(authData.user.id);
+      throw new Error(
+        "Failed to create user profile. Rolling back auth account."
+      );
+    }
+
+    // 3. Sign in immediately so the session cookie is set
+    const supabase = await createSupabaseServerClient();
+    await supabase.auth.signInWithPassword({ email, password });
+
+    return parseStringify(mapUserRow(profileRow));
   } catch (error: any) {
-    console.error('signUp Error:', error);
+    console.error("signUp Error:", error);
     throw error;
   }
-}
+};
+
+// ─── getLoggedInUser ─────────────────────────────────────────────────────────
 
 export async function getLoggedInUser() {
   try {
-    const { account } = await createSessionClient();
-    const result = await account.get();
+    const supabase = await createSupabaseServerClient();
 
-    const user = await getUserInfo({ userId: result.$id })
+    // Use getSession() — reads the JWT from the cookie with zero network calls.
+    // The middleware already validates & refreshes the token on every request,
+    // so by the time this runs the session in the cookie is current.
+    // Using getUser() here causes parallel server actions to race on the same
+    // refresh token, producing "refresh_token_already_used" errors.
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    return parseStringify(user);
+    if (!session?.user) return null;
+
+    const profile = await getUserInfo({ userId: session.user.id });
+    return parseStringify(profile);
   } catch (error) {
     return null;
   }
 }
+
+// ─── logoutAccount ───────────────────────────────────────────────────────────
 
 export const logoutAccount = async () => {
   try {
-    const { account } = await createSessionClient();
-
-    (await cookies()).delete('appwrite-session');
-
-    await account.deleteSession('current');
+    const supabase = await createSupabaseServerClient();
+    await supabase.auth.signOut();
   } catch (error) {
     return null;
   }
-}
+};
 
-// Banking logic removed.
+// ─── requestPasswordReset ─────────────────────────────────────────────────────
+// Sends a password-reset email via Supabase Auth.
+// redirectTo must be an absolute URL — Supabase appends the one-time token as a
+// query param and the user lands on that page after clicking the link in email.
+
+export const requestPasswordReset = async (email: string): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/reset-password`,
+    });
+
+    if (error) {
+      console.error("requestPasswordReset error:", error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("requestPasswordReset unexpected error:", err);
+    return { success: false, error: "An unexpected error occurred." };
+  }
+};
+
+// ─── updatePassword ───────────────────────────────────────────────────────────
+// Called on the /reset-password page after Supabase has exchanged the token for
+// a session. At that point the user is authenticated and we can update password.
+
+export const updatePassword = async (newPassword: string): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (error) {
+      console.error("updatePassword error:", error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("updatePassword unexpected error:", err);
+    return { success: false, error: "An unexpected error occurred." };
+  }
+};
