@@ -28,8 +28,9 @@ export async function middleware(request: NextRequest) {
   // getUser() validates the token with Supabase Auth and refreshes it if expired.
   // The middleware is the single serial point per request — it runs before any
   // parallel server components/actions, so by the time they execute the refreshed
-  // tokens are already written to cookies. Server actions then use getSession()
-  // (cookie-only, no network) which eliminates the refresh-token race entirely.
+  // tokens are already written to cookies. Server actions then use getUser()
+  // (which is memoized via React.cache()) so that we hit the Supabase Auth
+  // server only once per request.
   const {
     data: { user },
   } = await supabase.auth.getUser();

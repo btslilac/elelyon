@@ -301,28 +301,28 @@ export const inviteUser = async ({
 
 // ─── getLoggedInUser ─────────────────────────────────────────────────────────
 
-export async function getLoggedInUser() {
+import { cache } from 'react';
+
+export const getLoggedInUser = cache(async () => {
   try {
     const supabase = await createSupabaseServerClient();
 
-    // Intentionally using getSession() here for performance — zero extra network calls.
-    // Security note: this IS safe because the middleware calls getUser() (which
-    // validates the JWT with the Supabase Auth server) on every request *before*
-    // any server component/action runs. By the time we get here the session cookie
-    // has already been authenticated. Using getUser() here would add a redundant
-    // ~100-200ms Supabase Auth round-trip on every server-rendered page.
+    // getUser() validates the JWT with the Supabase Auth server, avoiding the
+    // "insecure" warning that getSession() triggers. This function is wrapped
+    // in React.cache() so that multiple calls within the same request (e.g.,
+    // layout.tsx and page.tsx) only hit the Supabase Auth server once.
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session?.user) return null;
+    if (!user) return null;
 
-    const profile = await getUserInfo({ userId: session.user.id });
+    const profile = await getUserInfo({ userId: user.id });
     return parseStringify(profile);
   } catch (error) {
     return null;
   }
-}
+});
 
 // ─── logoutAccount ───────────────────────────────────────────────────────────
 
