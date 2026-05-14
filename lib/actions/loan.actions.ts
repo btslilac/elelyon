@@ -6,6 +6,7 @@ import { InterestCalculator } from "../interest";
 import { revalidatePath } from "next/cache";
 import { getLoggedInUser } from "./user.actions";
 import { logAuditEvent } from "./audit.actions";
+import { triggerEventNotification, scheduleLoanReminders } from "./collections.actions";
 
 function mapLoanRow(row: any): Loan {
   return {
@@ -295,6 +296,12 @@ export const approveLoan = async (loanId: string) => {
       previousValue: "Pending",
       newValue: "Active",
     });
+
+    // ── NOTIFICATIONS & REMINDERS ──────────────────────────────────────────
+    // Trigger approval message and schedule upcoming payment reminders
+    await triggerEventNotification(loanId, 'LOAN_APPROVAL');
+    await scheduleLoanReminders(loanId);
+    // ───────────────────────────────────────────────────────────────────────
 
     revalidatePath("/");
     revalidatePath("/loans");

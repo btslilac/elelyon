@@ -19,5 +19,10 @@ export const sidebarLinks = [
     route: "/reports",
     label: "Reports",
   },
+  {
+    imgURL: "/icons/transaction.svg", // Using a placeholder icon, Sidebar iconMap handles actual lucide icon
+    route: "/communications",
+    label: "Communications",
+  },
 ];
 

@@ -84,7 +84,10 @@ declare type AuditAction =
   | "LOAN_DENIED"
   | "LOAN_UPDATED"
   | "STATUS_CHANGED"
-  | "STATEMENT_GENERATED";
+  | "STATEMENT_GENERATED"
+  | "CLIENT_CREATED"
+  | "CLIENT_UPDATED"
+  | "CLIENT_DELETED";
 
 declare type LMSClient = {
   $id: string;
@@ -96,6 +99,9 @@ declare type LMSClient = {
   address?: string;
   totalBorrowed: number;
   outstandingBalance: number;
+  profilePhotoUrl?: string;
+  profilePhotoPath?: string;
+  updatedAt?: string;
 };
 
 declare type Loan = {

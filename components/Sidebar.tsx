@@ -13,6 +13,7 @@ const iconMap: Record<string, React.ElementType> = {
   '/clients': Users,
   '/loans': CreditCard,
   '/reports': BarChart2,
+  '/communications': MessageSquare,
   '/users': UserCog,
 }
 

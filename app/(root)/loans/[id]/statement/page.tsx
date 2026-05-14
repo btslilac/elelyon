@@ -147,7 +147,7 @@ export default async function StatementPage({
           </div>
 
           {/* RIGHT */}
-          <div className="statement-meta-card">
+          {/*<div className="statement-meta-card">
             <div className="statement-meta-row">
               <span className="statement-meta-label">Statement</span>
               <span className="statement-meta-data">Loan Statement</span>
@@ -175,6 +175,25 @@ export default async function StatementPage({
                 </span>
               </div>
             )}
+          </div>*/}
+
+          {/* PASSPORT PHOTO */}
+          <div className="statement-passport-photo">
+            {client?.profilePhotoUrl ? (
+              <Image
+                src={client.profilePhotoUrl}
+                width={120}
+                height={150}
+                alt="Client Portrait"
+                className="passport-img"
+                priority
+              />
+            ) : (
+              <div className="passport-placeholder">
+                <p>No Photo</p>
+              </div>
+            )}
+            <div className="passport-label">CLIENT'S PHOTO</div>
           </div>
         </div>
 

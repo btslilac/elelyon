@@ -8,6 +8,7 @@ import ClientsTable from "@/components/ClientsTable";
 export default async function ClientsPage() {
   const clients = await getClients() || [];
   const totalExposure = clients.reduce((acc: number, c: any) => acc + (c.outstandingBalance || 0), 0);
+  const clientsInArrears = clients.filter((c: any) => (c.outstandingBalance || 0) > 0).length;
 
   return (
     <section className="home-content">
@@ -23,7 +24,7 @@ export default async function ClientsPage() {
       </header>
 
       {/* Client Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card-premium flex flex-col justify-between group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10" style={{ backgroundColor: 'rgba(17,17,19,0.03)' }}></div>
           <div className="flex justify-between items-start mb-6">
@@ -54,6 +55,23 @@ export default async function ClientsPage() {
             <div className="mt-3 flex items-center gap-2">
               <span className="badge badge-error">Outstanding</span>
               <p className="text-12 text-gray-500 font-medium">Unpaid principal</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card-premium flex flex-col justify-between group overflow-hidden relative border-l-4 border-l-warning-500">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-warning-50 rounded-bl-full -z-10"></div>
+          <div className="flex justify-between items-start mb-6">
+            <p className="text-12 font-bold text-gray-500 uppercase tracking-widest">Clients in Arrears</p>
+            <div className="p-2 bg-warning-50 rounded-lg text-warning-700" style={{ outline: '1px solid rgba(254,243,199,1)' }}>
+              <Users className="size-4" />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-36 font-bold text-gray-900">{clientsInArrears}</h2>
+            <div className="mt-3 flex items-center gap-2">
+              <span className="badge badge-warning">At Risk</span>
+              <p className="text-12 text-gray-500 font-medium">Overdue payments</p>
             </div>
           </div>
         </div>
