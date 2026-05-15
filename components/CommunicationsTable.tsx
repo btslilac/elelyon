@@ -62,9 +62,12 @@ export default function CommunicationsTable({ notifications }: CommunicationsTab
             <TableRow key={notif.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
               <TableCell className="py-4">
                 <div className="flex flex-col">
-                  <span className="text-14 font-semibold text-gray-900">{notif.recipient}</span>
+                  <span className="text-14 font-semibold text-gray-900">
+                    {notif.clients ? `${notif.clients.first_name} ${notif.clients.last_name}` : notif.recipient}
+                  </span>
+                  <span className="text-12 text-gray-500 font-medium">{notif.recipient}</span>
                   {notif.client_id && (
-                    <Link href={`/clients/${notif.client_id}`} className="text-12 text-blue-600 hover:underline">
+                    <Link href={`/clients/${notif.client_id}`} className="text-11 text-blue-600 hover:underline font-semibold mt-1">
                       View Profile
                     </Link>
                   )}

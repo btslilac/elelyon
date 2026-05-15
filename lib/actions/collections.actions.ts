@@ -87,7 +87,7 @@ export async function scheduleLoanReminders(loanId: string) {
 export async function getNotifications(params: { clientId?: string; loanId?: string }) {
   try {
     const supabase = createSupabaseAdminClient();
-    let query = supabase.from('notifications').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('notifications').select('*, clients(first_name, last_name)').order('created_at', { ascending: false });
 
     if (params.loanId) {
       query = query.eq('loan_id', params.loanId);
