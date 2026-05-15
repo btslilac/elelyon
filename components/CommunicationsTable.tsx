@@ -78,7 +78,7 @@ export default function CommunicationsTable({ notifications }: CommunicationsTab
               </TableCell>
               <TableCell className="py-4">
                 <Badge variant="outline" className="text-10 font-bold bg-slate-100 text-slate-600 border-none uppercase">
-                  {notif.template_type.replace(/_/g, ' ')}
+                  {(notif.template_type || 'UNKNOWN').replace(/_/g, ' ')}
                 </Badge>
               </TableCell>
               <TableCell className="py-4">
@@ -96,10 +96,10 @@ export default function CommunicationsTable({ notifications }: CommunicationsTab
               <TableCell className="py-4">
                 <div className="flex flex-col">
                   <span className="text-13 font-medium text-gray-700">
-                    {format(new Date(notif.created_at), 'MMM dd, yyyy')}
+                    {notif.created_at ? format(new Date(notif.created_at), 'MMM dd, yyyy') : 'N/A'}
                   </span>
                   <span className="text-11 text-gray-400">
-                    {format(new Date(notif.created_at), 'hh:mm a')}
+                    {notif.created_at ? format(new Date(notif.created_at), 'hh:mm a') : 'N/A'}
                   </span>
                 </div>
               </TableCell>

@@ -4,11 +4,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "worker": "NODE_OPTIONS='--dns-result-order=ipv4first' tsx worker.ts"
+    "worker": "tsx worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

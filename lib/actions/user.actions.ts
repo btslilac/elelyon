@@ -55,11 +55,16 @@ export const signIn = async ({ email, password }: signInProps) => {
     }
 
     const adminSupabase = createSupabaseAdminClient();
-    let { data: userRow } = await adminSupabase
+    let { data: userRow, error: fetchError } = await adminSupabase
       .from("users")
       .select("*")
       .eq("auth_id", authData.user.id)
       .maybeSingle();
+
+    if (fetchError) {
+      console.error("signIn fetch user error:", fetchError);
+      return null;
+    }
 
     // Auto-recovery: if no profile document exists, create one
     if (!userRow) {
@@ -73,6 +78,10 @@ export const signIn = async ({ email, password }: signInProps) => {
       const firstName = meta.first_name ?? meta.firstName ?? nameParts[0] ?? "System";
       const lastName = meta.last_name ?? meta.lastName ?? "Admin";
 
+      const isOwner = authData.user.email === "timtheesam@gmail.com";
+      const defaultRole = isOwner ? "ADMIN" : "STAFF";
+      const defaultStatus = isOwner ? "active" : "pending";
+
       const { data: recovered, error: recoverError } = await adminSupabase
         .from("users")
         .insert({
@@ -80,8 +89,8 @@ export const signIn = async ({ email, password }: signInProps) => {
           email: authData.user.email,
           first_name: firstName,
           last_name: lastName,
-          role: "ADMIN",
-          user_status: "active",
+          role: defaultRole,
+          user_status: defaultStatus,
         })
         .select()
         .single();

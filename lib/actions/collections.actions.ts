@@ -97,7 +97,7 @@ export async function getNotifications(params: { clientId?: string; loanId?: str
 
     const { data, error } = await query;
     if (error) throw error;
-    return data;
+    return data || [];
   } catch (error) {
     console.error("[getNotifications] Error:", error);
     return [];

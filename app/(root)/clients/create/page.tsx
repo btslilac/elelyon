@@ -97,22 +97,22 @@ export default function CreateClientPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Photo Upload Column */}
             <div className="lg:col-span-1">
-               <div className="card-premium p-6 h-full">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-primary/5 rounded-lg text-primary">
-                      <Camera className="size-5" />
-                    </div>
-                    <h3 className="text-16 font-semibold text-gray-900 tracking-tight">Profile Photo</h3>
+              <div className="card-premium p-6 h-full">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-primary/5 rounded-lg text-primary">
+                    <Camera className="size-5" />
                   </div>
-                  
-                  <FileUpload
-                    onFileDataReady={setPhotoData}
-                    className="mt-2"
-                  />
-                  <p className="text-12 text-gray-500 mt-4 leading-relaxed">
-                    A clear profile photo helps in identifying the borrower during field visits and repayments.
-                  </p>
-               </div>
+                  <h3 className="text-16 font-semibold text-gray-900 tracking-tight">Profile Photo</h3>
+                </div>
+
+                <FileUpload
+                  onFileDataReady={setPhotoData}
+                  className="mt-2"
+                />
+                <p className="text-12 text-gray-500 mt-4 leading-relaxed">
+                  A clear profile photo helps in identifying the borrower during field visits and repayments.
+                </p>
+              </div>
             </div>
 
             {/* Form Fields Column */}

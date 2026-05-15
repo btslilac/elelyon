@@ -92,12 +92,12 @@ export default function CommunicationTimeline({ notifications }: CommunicationTi
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-3">
                   <p className="text-14 font-bold text-gray-900 uppercase tracking-tight">
-                    {notif.template_type.replace(/_/g, ' ')}
+                    {(notif.template_type || 'UNKNOWN').replace(/_/g, ' ')}
                   </p>
                   {getStatusBadge(notif.status)}
                 </div>
                 <time className="text-12 text-gray-400 font-medium whitespace-nowrap">
-                  {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
+                  {notif.created_at ? formatDistanceToNow(new Date(notif.created_at), { addSuffix: true }) : 'N/A'}
                 </time>
               </div>
 

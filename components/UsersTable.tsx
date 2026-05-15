@@ -19,8 +19,8 @@ type Props = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  pending:  { label: 'Pending',  color: '#c2410c', bg: '#fff7ed', icon: Clock },
-  active:   { label: 'Active',   color: '#15803d', bg: '#f0fdf4', icon: CheckCircle },
+  pending: { label: 'Pending', color: '#c2410c', bg: '#fff7ed', icon: Clock },
+  active: { label: 'Active', color: '#15803d', bg: '#f0fdf4', icon: CheckCircle },
   rejected: { label: 'Rejected', color: '#b91c1c', bg: '#fef2f2', icon: XCircle },
 };
 

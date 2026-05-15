@@ -178,20 +178,20 @@ export async function generateMonthlySnapshot(
 
   const [repRes, penRes] = loanIds.length > 0
     ? await Promise.all([
-        supabase
-          .from("repayments")
-          .select("loan_id, amount")
-          .in("loan_id", loanIds)
-          .gte("date", periodStart)
-          .lte("date", periodEnd),
-        supabase
-          .from("penalties")
-          .select("loan_id, amount")
-          .in("loan_id", loanIds)
-          .gte("date_applied", periodStart)
-          .lte("date_applied", periodEnd)
-          .eq("status", "Active"),
-      ])
+      supabase
+        .from("repayments")
+        .select("loan_id, amount")
+        .in("loan_id", loanIds)
+        .gte("date", periodStart)
+        .lte("date", periodEnd),
+      supabase
+        .from("penalties")
+        .select("loan_id, amount")
+        .in("loan_id", loanIds)
+        .gte("date_applied", periodStart)
+        .lte("date_applied", periodEnd)
+        .eq("status", "Active"),
+    ])
     : [{ data: [] }, { data: [] }];
 
   const repByLoan = new Map<string, number>();

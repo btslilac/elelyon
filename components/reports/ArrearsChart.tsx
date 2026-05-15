@@ -20,10 +20,10 @@ const BUCKET_COLORS = ["#f59e0b", "#f97316", "#ef4444", "#7f1d1d"];
 
 export default function ArrearsChart({ summary }: ArrearsChartProps) {
   const data = [
-    { bucket: "1–30 Days",  balance: summary.bucket1_30.totalBalance,  count: summary.bucket1_30.count },
+    { bucket: "1–30 Days", balance: summary.bucket1_30.totalBalance, count: summary.bucket1_30.count },
     { bucket: "31–60 Days", balance: summary.bucket31_60.totalBalance, count: summary.bucket31_60.count },
     { bucket: "61–90 Days", balance: summary.bucket61_90.totalBalance, count: summary.bucket61_90.count },
-    { bucket: "90+ Days",   balance: summary.bucket90plus.totalBalance,count: summary.bucket90plus.count },
+    { bucket: "90+ Days", balance: summary.bucket90plus.totalBalance, count: summary.bucket90plus.count },
   ];
 
   function shortAmount(value: number) {

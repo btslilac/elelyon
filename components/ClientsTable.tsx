@@ -155,15 +155,15 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
                   <tr key={client.$id} className="data-table-row group/row">
                     <td className="data-td">
                       <div className="flex items-center gap-3">
-                        <ClientAvatar 
-                          firstName={client.firstName} 
-                          lastName={client.lastName} 
-                          photoUrl={client.profilePhotoUrl} 
+                        <ClientAvatar
+                          firstName={client.firstName}
+                          lastName={client.lastName}
+                          photoUrl={client.profilePhotoUrl}
                           size="md"
                         />
                         <div className="flex flex-col min-w-0">
-                          <Link 
-                            href={`/clients/${client.$id}`} 
+                          <Link
+                            href={`/clients/${client.$id}`}
                             className="client-name hover:text-blue-600 transition-colors cursor-pointer"
                           >
                             {client.firstName} {client.lastName}

@@ -25,6 +25,15 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // Helper to preserve cookies set by Supabase (e.g. refreshed tokens) during a redirect
+  const redirectWithCookies = (url: URL | string) => {
+    const response = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      response.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return response;
+  };
+
   const { pathname, searchParams } = request.nextUrl;
   const code = searchParams.get('code');
 
@@ -33,7 +42,7 @@ export async function middleware(request: NextRequest) {
   if (pathname !== '/auth/callback' && pathname.endsWith('/auth/callback')) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/callback';
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // 1. Global PKCE Code Exchange: If a 'code' is present in the URL, exchange it
@@ -43,7 +52,7 @@ export async function middleware(request: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code);
     const url = request.nextUrl.clone();
     url.searchParams.delete('code');
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // getUser() validates the token with Supabase Auth and refreshes it if expired.
@@ -69,40 +78,52 @@ export async function middleware(request: NextRequest) {
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // Redirect authenticated users away from auth pages (except pending-approval)
   if (user && isAuthRoute && !pathname.startsWith("/pending-approval")) {
     // Check user status before redirecting to dashboard
-    const { data: profile } = await supabase
-      .from("users")
-      .select("user_status")
-      .eq("auth_id", user.id)
-      .maybeSingle();
+    try {
+      const { data: profile, error } = await supabase
+        .from("users")
+        .select("user_status")
+        .eq("auth_id", user.id)
+        .maybeSingle();
 
-    if (profile?.user_status === "pending" || profile?.user_status === "rejected") {
-      // Pending/rejected users can stay on auth pages — they shouldn't reach the dashboard
-      return supabaseResponse;
+      if (error) console.error("Middleware fetch user error:", error);
+
+      if (profile?.user_status === "pending" || profile?.user_status === "rejected") {
+        // Pending/rejected users can stay on auth pages — they shouldn't reach the dashboard
+        return supabaseResponse;
+      }
+    } catch (err) {
+      console.error("Middleware unexpected error:", err);
     }
 
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url);
   }
 
   // Block pending/rejected users from accessing protected routes
   if (user && !isAuthRoute) {
-    const { data: profile } = await supabase
-      .from("users")
-      .select("user_status")
-      .eq("auth_id", user.id)
-      .maybeSingle();
+    try {
+      const { data: profile, error } = await supabase
+        .from("users")
+        .select("user_status")
+        .eq("auth_id", user.id)
+        .maybeSingle();
 
-    if (profile?.user_status === "pending" || profile?.user_status === "rejected") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/pending-approval";
-      return NextResponse.redirect(url);
+      if (error) console.error("Middleware fetch user error:", error);
+
+      if (profile?.user_status === "pending" || profile?.user_status === "rejected") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/pending-approval";
+        return redirectWithCookies(url);
+      }
+    } catch (err) {
+      console.error("Middleware unexpected error:", err);
     }
   }
 
