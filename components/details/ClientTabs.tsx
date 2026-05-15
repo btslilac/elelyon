@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useRef, useTransition } from 'react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LayoutDashboard, Receipt, AlertCircle, FileText, Activity,
-  ExternalLink, CheckCircle, XCircle, Clock, AlertTriangle, Folder, MessageSquare
+  ExternalLink, CheckCircle, XCircle, Clock, AlertTriangle, Folder, MessageSquare, Upload, Loader2, File
 } from "lucide-react";
+import { uploadClientDocument } from "@/lib/actions/client.actions";
 import ClientOverview from "./ClientOverview";
 import ActivityTimeline from "./ActivityTimeline";
 import CommunicationTimeline from "./CommunicationTimeline";
@@ -20,6 +21,7 @@ interface ClientTabsProps {
   penalties: any[];
   auditLogs: any[];
   notifications: any[];
+  documents?: any[];
 }
 
 /* ── helpers ── */
@@ -45,7 +47,32 @@ function fmt(d: string) {
   return d ? new Date(d).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "—";
 }
 
-export default function ClientTabs({ client, loans, repayments, penalties, auditLogs }: ClientTabsProps) {
+export default function ClientTabs({ client, loans, repayments, penalties, auditLogs, notifications = [], documents = [] }: ClientTabsProps) {
+  const [isUploading, startTransition] = useTransition();
+  const [selectedDocType, setSelectedDocType] = useState("OTHER");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("documentType", selectedDocType);
+      formData.append("documentName", file.name);
+      
+      const res = await uploadClientDocument(client.$id, formData);
+      if (!res) {
+        alert("Failed to upload document. Please try again.");
+      }
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    });
+  };
+
   const tabClass = "data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none rounded-none text-14 font-semibold text-gray-500 h-12 px-0";
 
   return (
@@ -228,12 +255,88 @@ export default function ClientTabs({ client, loans, repayments, penalties, audit
       {/* ── DOCUMENTS ── */}
       <TabsContent value="documents" className="focus-visible:outline-none">
         <div className="animate-fade-in">
-          <EmptyState
-            icon={<Folder />}
-            title="No documents yet"
-            desc="Upload loan agreements, ID copies, or signed forms to keep everything in one place."
-            action={<button className="btn-secondary mt-6">Upload Document</button>}
-          />
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-16 font-semibold text-gray-900">Client Documents</h3>
+            <div className="flex items-center gap-3">
+              <select 
+                value={selectedDocType}
+                onChange={(e) => setSelectedDocType(e.target.value)}
+                className="select-premium h-11 text-14 border-gray-200"
+                disabled={isUploading}
+              >
+                <option value="OTHER">Other Document</option>
+                <option value="ID_COPY">ID / Passport Copy</option>
+                <option value="SIGNED_CONTRACT">Signed Contract</option>
+                <option value="PROOF_OF_ADDRESS">Proof of Address</option>
+                <option value="BANK_STATEMENT">Bank Statement</option>
+              </select>
+
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+                className="hidden" 
+                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()} 
+                disabled={isUploading}
+                className="btn-primary flex items-center gap-2"
+              >
+                {isUploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                {isUploading ? "Uploading..." : "Upload"}
+              </button>
+            </div>
+          </div>
+
+          {documents.length === 0 ? (
+            <EmptyState
+              icon={<Folder />}
+              title="No documents yet"
+              desc="Upload loan agreements, ID copies, or signed forms to keep everything in one place."
+            />
+          ) : (
+            <div className="card-premium overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="data-th text-left">Document Name</th>
+                    <th className="data-th text-left">Type</th>
+                    <th className="data-th text-left">Date Uploaded</th>
+                    <th className="data-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documents.map((doc) => (
+                    <tr key={doc.id} className="data-table-row">
+                      <td className="data-td">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <File className="size-4" />
+                          </div>
+                          <span className="text-14 font-medium text-gray-700">{doc.document_name}</span>
+                        </div>
+                      </td>
+                      <td className="data-td">
+                        <span className="badge badge-success">{doc.document_type}</span>
+                      </td>
+                      <td className="data-td text-14 text-gray-600">{fmt(doc.created_at)}</td>
+                      <td className="data-td text-right">
+                        <a 
+                          href={doc.file_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="inline-flex items-center gap-1 text-12 font-semibold text-blue-600 hover:text-blue-700"
+                        >
+                          View <ExternalLink className="size-3" />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </TabsContent>
 

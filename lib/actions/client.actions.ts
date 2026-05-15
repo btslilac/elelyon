@@ -138,12 +138,13 @@ export const getClientFullProfile = async (clientId: string) => {
     if (clientError) throw clientError;
 
     // Fetch related data in parallel
-    const [loansRes, repaymentsRes, penaltiesRes, auditRes, notificationsRes] = await Promise.all([
+    const [loansRes, repaymentsRes, penaltiesRes, auditRes, notificationsRes, documentsRes] = await Promise.all([
       supabase.from("loans").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
       supabase.from("repayments").select("*").eq("client_id", clientId).order("date", { ascending: false }),
       supabase.from("penalties").select("*").eq("client_id", clientId).order("date_applied", { ascending: false }),
       supabase.from("audit_logs").select("*").eq("client_id", clientId).order("timestamp", { ascending: false }).limit(20),
-      supabase.from("notifications").select("*").eq("client_id", clientId).order("created_at", { ascending: false })
+      supabase.from("notifications").select("*").eq("client_id", clientId).order("created_at", { ascending: false }),
+      supabase.from("client_documents").select("*").eq("client_id", clientId).order("created_at", { ascending: false })
     ]);
 
     return parseStringify({
@@ -153,6 +154,7 @@ export const getClientFullProfile = async (clientId: string) => {
       penalties: penaltiesRes.data || [],
       auditLogs: auditRes.data || [],
       notifications: notificationsRes.data || [],
+      documents: documentsRes.data || [],
     });
   } catch (error) {
     console.error("Error fetching full client profile", error);
@@ -192,6 +194,53 @@ export const updateClient = async (clientId: string, clientData: any) => {
     return parseStringify(mapClientRow(data));
   } catch (error) {
     console.error("Error updating client", error);
+    return null;
+  }
+};
+
+export const uploadClientDocument = async (clientId: string, formData: FormData) => {
+  try {
+    const file = formData.get("file") as File;
+    const documentType = formData.get("documentType") as string;
+    const documentName = formData.get("documentName") as string;
+    const uploadedBy = formData.get("uploadedBy") as string;
+
+    if (!file || !documentType || !documentName) return null;
+
+    // 1. Convert to ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+
+    // 2. Upload to Storage
+    const path = generateClientAssetPath(clientId, "documents", file.name);
+    const uploadResult = await uploadClientAsset(path, arrayBuffer, file.type);
+    
+    if (!uploadResult) throw new Error("Failed to upload document to storage");
+
+    // 3. Insert into Database
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("client_documents")
+      .insert({
+        client_id: clientId,
+        document_type: documentType,
+        document_name: documentName,
+        file_path: uploadResult.path,
+        file_url: uploadResult.url,
+        uploaded_by: uploadedBy || "System",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      // Rollback storage upload if DB insert fails
+      await deleteClientAsset(uploadResult.path);
+      throw error;
+    }
+
+    revalidatePath(`/clients/${clientId}`);
+    return parseStringify(data);
+  } catch (error) {
+    console.error("Error uploading client document:", error);
     return null;
   }
 };

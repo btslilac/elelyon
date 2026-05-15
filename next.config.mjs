@@ -18,6 +18,13 @@ const nextConfig = {
     // IMPORTANT FIX
     unoptimized: true,
   },
+  
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '20mb',
+    },
+  },
+
 };
 
 export default withSentryConfig(

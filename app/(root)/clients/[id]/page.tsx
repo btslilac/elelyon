@@ -13,7 +13,7 @@ export default async function ClientDetailsPage({ params }: SearchParamProps) {
     notFound();
   }
 
-  const { client, loans, repayments, penalties, auditLogs, notifications } = profile;
+  const { client, loans, repayments, penalties, auditLogs, notifications, documents } = profile;
 
   return (
     <section className="home-content">
@@ -41,6 +41,7 @@ export default async function ClientDetailsPage({ params }: SearchParamProps) {
             penalties={penalties} 
             auditLogs={auditLogs}
             notifications={notifications}
+            documents={documents}
           />
         </div>
       </div>
