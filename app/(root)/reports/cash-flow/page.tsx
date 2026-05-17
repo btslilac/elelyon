@@ -90,7 +90,7 @@ export default async function CashFlowReportPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {report.months.map((m) => (
+                    {report.months.map((m: any) => (
                       <tr key={`${m.year}-${m.month}`} className="data-table-row">
                         <td className="data-td font-medium text-gray-900">{m.label}</td>
                         <td className="data-td text-right tabular-nums text-indigo-600 font-semibold">

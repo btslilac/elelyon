@@ -27,18 +27,16 @@ const nextConfig = {
 
 };
 
-export default withSentryConfig(
-  nextConfig,
-  {
-    silent: true,
-    org: 'jsm-x9',
-    project: 'javascript-nextjs',
-  },
-  {
-    widenClientFileUpload: true,
-    transpileClientSDK: true,
-    hideSourceMaps: true,
-    disableLogger: true,
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  org: 'jsm-x9',
+  project: 'javascript-nextjs',
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
     automaticVercelMonitors: true,
-  }
-);
+  },
+});

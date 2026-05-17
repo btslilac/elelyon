@@ -20,27 +20,44 @@ export default async function CommunicationsPage() {
   };
 
   return (
-    <section className="flex flex-col flex-1 w-full p-6 lg:p-8 bg-slate-50/30 gap-8 min-h-screen">
+    <section className="home-content">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <HeaderBox 
-          title="Communication Center"
-          subtext="Monitor all outgoing loan notifications, reminders, and delivery statuses."
-        />
+        <header className="page-header">
+          <HeaderBox
+            title="Communication Logs"
+            subtext="Comprehensive logs of all messages sent to clients and their delivery statuses."
+          />
+        </header>
       </div>
 
-      <div className="animate-fade-in space-y-8">
+
+      <div className="animate-fade-in space-y-12">
         {/* Global Analytics Section */}
         <CommunicationStats stats={stats} />
+        <div className="h-4" />
 
-        {/* Global Message Log */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-18 font-bold text-gray-900">Message Audit Trail</h2>
-            <span className="text-12 font-medium text-gray-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-slate-100 shadow-sm">
-              Total Logs: {notifications.length}
-            </span>
+        <div className="border-t border-slate-100 pt-8">
+          {/* Global Message Log */}
+          <div className="space-y-4">
+
+            {/* Messages Log Header */}
+            <section className="my-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-18 font-bold text-gray-900">
+                  Message Audit Trail
+                </h2>
+
+                <span className="border-slate-100 text-12 rounded-full border bg-white px-3 py-1 font-medium uppercase tracking-widest text-gray-400 shadow-sm">
+                  Total Logs: {notifications.length}
+                </span>
+              </div>
+            </section>
+            <div className="h-4" />
+
+            {/* Data Table */}
+            <CommunicationsTable notifications={notifications} />
+
           </div>
-          <CommunicationsTable notifications={notifications} />
         </div>
       </div>
     </section>

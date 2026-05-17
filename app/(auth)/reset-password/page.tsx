@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image from "next/image";
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Lock, Loader2, CheckCircle, Eye, EyeOff } from 'lucide-react';
@@ -86,7 +86,6 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="auth-page">
-
       {/* ── Left Brand Panel ── */}
       <div className="auth-panel-left">
         <div className="auth-blob auth-blob-1" />
@@ -94,7 +93,15 @@ export default function ResetPasswordPage() {
         <div className="auth-left-inner">
           <div className="auth-brand">
             <div className="auth-logo">
-              <Image src="/icons/logo.svg" width={120} height={120} alt="logo" />
+              <Image
+                src="/icons/logo.svg"
+                width={120}
+                height={120}
+                alt="logo"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
             </div>
             <span className="auth-brand-name">El Elyon</span>
           </div>
@@ -110,7 +117,6 @@ export default function ResetPasswordPage() {
           </div>
         </div>
       </div>
-
       {/* ── Right Form Panel ── */}
       <div className="auth-panel-right">
         <div className="auth-form-wrap">
@@ -118,14 +124,22 @@ export default function ResetPasswordPage() {
           {/* Mobile logo */}
           <div className="auth-mobile-brand">
             <div className="auth-logo-dark">
-              <Image src="/icons/logo.svg" width={36} height={36} alt="logo" />
+              <Image
+                src="/icons/logo.svg"
+                width={36}
+                height={36}
+                alt="logo"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
             </div>
             <span className="auth-mobile-brand-name">El Elyon</span>
           </div>
 
           {done ? (
             /* ── Success State ── */
-            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+            (<div style={{ textAlign: 'center', padding: '2rem 0' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <CheckCircle size={52} strokeWidth={1.5} color="#16a34a" />
               </div>
@@ -140,25 +154,25 @@ export default function ResetPasswordPage() {
               <Link href="/sign-in" className="auth-submit-btn" style={{ display: 'inline-flex', textDecoration: 'none' }}>
                 Go to Sign In
               </Link>
-            </div>
+            </div>)
           ) : sessionError ? (
             /* ── Invalid / Expired Link ── */
-            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+            (<div style={{ textAlign: 'center', padding: '2rem 0' }}>
               <h1 className="auth-form-title" style={{ marginBottom: '0.5rem', color: '#dc2626' }}>Link expired</h1>
               <p className="auth-form-sub" style={{ marginBottom: '2rem' }}>{sessionError}</p>
               <Link href="/forgot-password" className="auth-submit-btn" style={{ display: 'inline-flex', textDecoration: 'none' }}>
                 Request a new link
               </Link>
-            </div>
+            </div>)
           ) : !sessionReady ? (
             /* ── Waiting for token exchange ── */
-            <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+            (<div style={{ textAlign: 'center', padding: '4rem 0' }}>
               <Loader2 size={32} className="auth-spinner" style={{ margin: '0 auto 1rem' }} />
               <p className="auth-form-sub">Verifying your reset link…</p>
-            </div>
+            </div>)
           ) : (
             /* ── New Password Form ── */
-            <>
+            (<>
               <div className="auth-form-header">
                 <h1 className="auth-form-title">
                 {isInvite ? 'Set Your Password' : 'New Password'}
@@ -169,7 +183,6 @@ export default function ResetPasswordPage() {
                   : 'Enter and confirm your new password below.'}
               </p>
               </div>
-
               <form onSubmit={handleSubmit} className="auth-form" noValidate>
 
                 {/* New Password */}
@@ -228,7 +241,7 @@ export default function ResetPasswordPage() {
                   }
                 </button>
               </form>
-            </>
+            </>)
           )}
         </div>
       </div>

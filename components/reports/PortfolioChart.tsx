@@ -49,7 +49,7 @@ export default function PortfolioChart({ data }: PortfolioChartProps) {
           innerRadius={55}
           paddingAngle={3}
           dataKey="value"
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+          label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
           labelLine={false}
         >
           {chartData.map((_, index) => (
@@ -57,7 +57,7 @@ export default function PortfolioChart({ data }: PortfolioChartProps) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number) => [value, "Loans"]}
+          formatter={(value: any) => [value, "Loans"]}
           contentStyle={{ borderRadius: "0.75rem", border: "1px solid #e5e7eb", fontSize: 12 }}
         />
         <Legend

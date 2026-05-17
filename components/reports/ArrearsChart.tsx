@@ -39,7 +39,7 @@ export default function ArrearsChart({ summary }: ArrearsChartProps) {
         <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={shortAmount} tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
         <Tooltip
-          formatter={(value: number) => [`KES ${value.toLocaleString()}`, "Outstanding Balance"]}
+          formatter={(value: any) => [`KES ${Number(value).toLocaleString()}`, "Outstanding Balance"]}
           contentStyle={{ borderRadius: "0.75rem", border: "1px solid #e5e7eb", fontSize: 12 }}
         />
         <Bar dataKey="balance" name="Balance" radius={[6, 6, 0, 0]}>

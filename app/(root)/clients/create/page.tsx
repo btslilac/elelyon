@@ -129,12 +129,12 @@ export default function CreateClientPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
                     <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">First Name</label>
-                    <input type="text" name="firstName" required placeholder="e.g. John" className="input-class" disabled={isPending || isUploading} />
+                    <input type="text" name="firstName" required placeholder="e.g. John" className="input-class" disabled={isLoading} />
                   </div>
 
                   <div className="flex flex-col gap-2">
                     <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Last Name</label>
-                    <input type="text" name="lastName" required placeholder="e.g. Doe" className="input-class" disabled={isPending || isUploading} />
+                    <input type="text" name="lastName" required placeholder="e.g. Doe" className="input-class" disabled={isLoading} />
                   </div>
 
                   <div className="flex flex-col gap-2 md:col-span-2">
@@ -142,7 +142,7 @@ export default function CreateClientPage() {
                       <FileText className="size-3.5" />
                       National ID / Passport
                     </label>
-                    <input type="text" name="nationalId" required placeholder="Enter ID Number" className="input-class font-mono" disabled={isPending || isUploading} />
+                    <input type="text" name="nationalId" required placeholder="Enter ID Number" className="input-class font-mono" disabled={isLoading} />
                   </div>
                 </div>
               </div>
@@ -159,12 +159,12 @@ export default function CreateClientPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
                     <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Phone Number</label>
-                    <input type="tel" name="phone" required placeholder="+254 7..." className="input-class" disabled={isPending || isUploading} />
+                    <input type="tel" name="phone" required placeholder="+254 7..." className="input-class" disabled={isLoading} />
                   </div>
 
                   <div className="flex flex-col gap-2">
                     <label className="text-12 font-bold text-gray-500 uppercase tracking-widest">Email Address</label>
-                    <input type="email" name="email" placeholder="john@example.com" className="input-class" disabled={isPending || isUploading} />
+                    <input type="email" name="email" placeholder="john@example.com" className="input-class" disabled={isLoading} />
                   </div>
 
                   <div className="flex flex-col gap-2 md:col-span-2">
@@ -172,7 +172,7 @@ export default function CreateClientPage() {
                       <MapPin className="size-3.5" />
                       Residential Address
                     </label>
-                    <input type="text" name="address" placeholder="Physical location details" className="input-class" disabled={isPending || isUploading} />
+                    <input type="text" name="address" placeholder="Physical location details" className="input-class" disabled={isLoading} />
                   </div>
                 </div>
               </div>

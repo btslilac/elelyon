@@ -3,7 +3,7 @@
 import { sidebarLinks } from '@/constants'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import Image from 'next/image'
+import Image from "next/image"
 import { usePathname } from 'next/navigation'
 import Footer from './Footer'
 import { LayoutDashboard, Users, CreditCard, BarChart2, UserCog, MessageSquare } from 'lucide-react'
@@ -30,19 +30,19 @@ const Sidebar = ({ user }: SiderbarProps) => {
             alt="El Elyon Logo"
             width={50}
             height={50}
-            style={{ objectFit: 'contain' }}
             priority
             loading="eager"
-          />
+            style={{
+              objectFit: 'contain',
+              maxWidth: "100%",
+              height: "auto"
+            }} />
         </div>
         <div className="sidebar-brand-info">
           <span className="sidebar-brand-name">El Elyon</span>
           <span className="sidebar-brand-tagline">Capital &amp; Credit Solutions</span>
         </div>
       </Link>
-
-
-
       {/* Nav Links */}
       <nav className="sidebar-nav">
         {sidebarLinks.map((item) => {
@@ -61,7 +61,6 @@ const Sidebar = ({ user }: SiderbarProps) => {
           )
         })}
       </nav>
-
       {/* Admin-only: User Management */}
       {user?.role === 'ADMIN' && (
         <div style={{ padding: '0 0.75rem', marginBottom: '0.5rem' }}>
@@ -78,13 +77,12 @@ const Sidebar = ({ user }: SiderbarProps) => {
           </Link>
         </div>
       )}
-
       {/* Footer */}
       <div className="sidebar-footer">
         <Footer user={user} />
       </div>
     </section>
-  )
+  );
 }
 
 export default Sidebar

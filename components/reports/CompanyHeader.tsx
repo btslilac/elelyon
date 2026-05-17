@@ -11,7 +11,6 @@ interface CompanyHeaderProps {
 export default function CompanyHeader({ title, subtext, className, rightContent }: CompanyHeaderProps) {
   return (
     <div className={cn("flex justify-between items-start mb-8 pb-6 border-b border-gray-300", className)}>
-
       {/* Left: Logo + Brand — logo is same visual height as stacked brand name + tagline */}
       <div className="flex items-center gap-3">
         {/*
@@ -25,8 +24,11 @@ export default function CompanyHeader({ title, subtext, className, rightContent 
           width={60}
           height={60}
           className="object-contain"
-          style={{ height: "60px", width: "auto" }}
-        />
+          style={{
+            height: "60px",
+            width: "auto",
+            maxWidth: "100%"
+          }} />
 
         {/* Brand name on top, tagline directly below */}
         <div className="flex flex-col justify-center">
@@ -38,7 +40,6 @@ export default function CompanyHeader({ title, subtext, className, rightContent 
           </span>
         </div>
       </div>
-
       {/* Right: Report title + metadata */}
       <div className="text-right">
         <p className="text-xl font-bold text-gray-900">{title}</p>

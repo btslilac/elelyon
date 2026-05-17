@@ -90,7 +90,7 @@ export default function CommunicationsTable({ notifications }: CommunicationsTab
                   <span className={cn(
                     "text-12 font-bold uppercase tracking-tight",
                     notif.status === 'SENT' || notif.status === 'DELIVERED' ? "text-emerald-600" :
-                    notif.status === 'FAILED' ? "text-red-600" : "text-amber-600"
+                      notif.status === 'FAILED' ? "text-red-600" : "text-amber-600"
                   )}>
                     {notif.status}
                   </span>

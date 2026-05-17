@@ -51,18 +51,15 @@ export default async function AuditLogReportPage({
         </div>
         <PdfExportButton reportType="audit" data={report} />
       </header>
-
       <div className="hidden print:block">
         <CompanyHeader 
           title="Audit Log Report"
           subtext={`Generated: ${new Date().toLocaleString("en-KE")}`}
         />
       </div>
-
       <div className="card-premium mb-6 print:hidden">
         <DateRangeFilter label="Filter by Date" />
       </div>
-
       {!report ? (
         <p className="text-gray-500">Failed to load audit log.</p>
       ) : (
@@ -100,7 +97,7 @@ export default async function AuditLogReportPage({
                         </div>
                       </td>
                     </tr>
-                  ) : report.rows.map((row) => (
+                  ) : report.rows.map((row: any) => (
                     <tr key={row.id} className="data-table-row">
                       <td className="data-td text-11 text-gray-400 whitespace-nowrap">
                         {new Date(row.timestamp).toLocaleString("en-KE", {

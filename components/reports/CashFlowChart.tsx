@@ -38,8 +38,8 @@ export default function CashFlowChart({ months }: CashFlowChartProps) {
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={shortAmount} tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
         <Tooltip
-          formatter={(value: number, name: string) => [
-            `KES ${value.toLocaleString()}`,
+          formatter={(value: any, name: any) => [
+            `KES ${Number(value).toLocaleString()}`,
             name === "disbursed" ? "Disbursed" : "Collected",
           ]}
           contentStyle={{ borderRadius: "0.75rem", border: "1px solid #e5e7eb", fontSize: 12 }}

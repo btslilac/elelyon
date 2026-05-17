@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image from "next/image";
 import Link from 'next/link';
 import { useState } from 'react';
 import { Mail, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
@@ -31,7 +31,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="auth-page">
-
       {/* ── Left Brand Panel (reuse auth styles) ── */}
       <div className="auth-panel-left">
         <div className="auth-blob auth-blob-1" />
@@ -39,19 +38,26 @@ export default function ForgotPasswordPage() {
         <div className="auth-left-inner">
           <div className="auth-brand">
             <div className="auth-logo">
-              <Image src="/icons/logo.svg" width={120} height={120} alt="logo" />
+              <Image
+                src="/icons/logo.svg"
+                width={120}
+                height={120}
+                alt="logo"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
             </div>
             <span className="auth-brand-name">El Elyon</span>
           </div>
           <div className="auth-hero">
             <h2 className="auth-hero-title">Forgot your<br />password?</h2>
             <p className="auth-hero-sub">
-              No worries — enter the email linked to your account and we'll send you a secure reset link.
+              No worries — enter the email linked to your account and we&apos;ll send you a secure reset link.
             </p>
           </div>
         </div>
       </div>
-
       {/* ── Right Form Panel ── */}
       <div className="auth-panel-right">
         <div className="auth-form-wrap">
@@ -59,34 +65,41 @@ export default function ForgotPasswordPage() {
           {/* Mobile logo */}
           <div className="auth-mobile-brand">
             <div className="auth-logo-dark">
-              <Image src="/icons/logo.svg" width={36} height={36} alt="logo" />
+              <Image
+                src="/icons/logo.svg"
+                width={36}
+                height={36}
+                alt="logo"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
             </div>
             <span className="auth-mobile-brand-name">El Elyon</span>
           </div>
 
           {sent ? (
             /* ── Success State ── */
-            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+            (<div style={{ textAlign: 'center', padding: '2rem 0' }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <CheckCircle size={52} strokeWidth={1.5} color="#16a34a" />
               </div>
               <h1 className="auth-form-title" style={{ marginBottom: '0.5rem' }}>Check your inbox</h1>
               <p className="auth-form-sub" style={{ marginBottom: '2rem' }}>
-                We've sent a password reset link to <strong>{email}</strong>. 
-                The link expires in 1 hour — check your spam folder if you don't see it.
+                We&apos;ve sent a password reset link to <strong>{email}</strong>. 
+                The link expires in 1 hour — check your spam folder if you don&apos;t see it.
               </p>
               <Link href="/sign-in" className="auth-submit-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
                 <ArrowLeft size={15} /> Back to Sign In
               </Link>
-            </div>
+            </div>)
           ) : (
             /* ── Request Form ── */
-            <>
+            (<>
               <div className="auth-form-header">
                 <h1 className="auth-form-title">Reset Password</h1>
                 <p className="auth-form-sub">Enter your account email to receive a reset link.</p>
               </div>
-
               <form onSubmit={handleSubmit} className="auth-form" noValidate>
                 <div className="auth-field">
                   <label className="auth-label"><Mail size={12} />Email Address</label>
@@ -116,12 +129,11 @@ export default function ForgotPasswordPage() {
                   }
                 </button>
               </form>
-
               <p className="auth-footer-text">
                 Remember it?{' '}
                 <Link href="/sign-in" className="auth-footer-link">Back to Sign In</Link>
               </p>
-            </>
+            </>)
           )}
         </div>
       </div>

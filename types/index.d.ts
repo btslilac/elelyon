@@ -1,11 +1,13 @@
-/* eslint-disable no-unused-vars */
+
+
+declare module 'africastalking';
 
 // ========================================
 // General
 // ========================================
 declare type SearchParamProps = {
-  params: { [key: string]: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ [key: string]: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 // ========================================
@@ -91,6 +93,7 @@ declare type AuditAction =
 
 declare type LMSClient = {
   $id: string;
+  $createdAt?: string;
   firstName: string;
   lastName: string;
   nationalId: string;
@@ -133,6 +136,7 @@ declare type Loan = {
   installmentAmount?: number;
   documentUrl?: string;
   createdBy?: string;
+  isHighRisk?: boolean;
 };
 
 declare type Repayment = {
@@ -171,7 +175,6 @@ declare type AuditLog = {
   previousValue?: string;
   newValue?: string;
   timestamp: string;
-  $createdAt: string;
 };
 
 // ========================================

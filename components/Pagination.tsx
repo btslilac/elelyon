@@ -37,7 +37,10 @@ export const Pagination = ({ page, totalPages }: PaginationProps) => {
           width={20}
           height={20}
           className="mr-2"
-        />
+          style={{
+            maxWidth: "100%",
+            height: "auto"
+          }} />
         Prev
       </Button>
       <p className="text-14 flex items-center px-2">
@@ -57,7 +60,10 @@ export const Pagination = ({ page, totalPages }: PaginationProps) => {
           width={20}
           height={20}
           className="ml-2 -scale-x-100"
-        />
+          style={{
+            maxWidth: "100%",
+            height: "auto"
+          }} />
       </Button>
     </div>
   );

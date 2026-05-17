@@ -1,5 +1,5 @@
 import { logoutAccount } from '@/lib/actions/user.actions'
-import Image from 'next/image'
+import Image from "next/image"
 import { useRouter } from 'next/navigation'
 import React from 'react'
 import { cn } from '@/lib/utils'
@@ -19,7 +19,6 @@ const Footer = ({ user, type = 'desktop' }: FooterProps) => {
           {user?.firstName[0]}
         </p>
       </div>
-
       <div className={type === 'mobile' ? 'footer_email-mobile' : 'footer_email'}>
         <h1 className="text-14 truncate text-gray-900 font-bold">
           {user?.firstName} {user?.lastName}
@@ -28,12 +27,20 @@ const Footer = ({ user, type = 'desktop' }: FooterProps) => {
           {user?.email}
         </p>
       </div>
-
       <div className="footer_image" onClick={handleLogOut}>
-        <Image src="/icons/logout.svg" width={20} height={20} alt="logout" className="opacity-50" />
+        <Image
+          src="/icons/logout.svg"
+          width={20}
+          height={20}
+          alt="logout"
+          className="opacity-50"
+          style={{
+            maxWidth: "100%",
+            height: "auto"
+          }} />
       </div>
     </footer>
-  )
+  );
 }
 
 export default Footer

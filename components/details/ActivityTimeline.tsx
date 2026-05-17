@@ -10,8 +10,10 @@ export default function ActivityTimeline({ logs }: ActivityTimelineProps) {
   if (!logs || logs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+      <br/>
         <Activity className="size-8 text-gray-300 mb-2" />
         <p className="text-14 text-gray-500">No activity recorded yet for this client.</p>
+        <br/>
       </div>
     );
   }

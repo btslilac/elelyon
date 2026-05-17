@@ -124,7 +124,6 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
           </button>
         </div>
       </div>
-
       <div className="data-table-wrap">
         <div className="data-table-scroll">
           <table className="data-table">

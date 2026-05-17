@@ -6,7 +6,7 @@ import { UserPlus, Users, TrendingDown } from "lucide-react";
 import ClientsTable from "@/components/ClientsTable";
 
 export default async function ClientsPage() {
-  const clients = await getClients() || [];
+  const clients = (await getClients()) || [];
   const totalExposure = clients.reduce((acc: number, c: any) => acc + (c.outstandingBalance || 0), 0);
   const clientsInArrears = clients.filter((c: any) => (c.outstandingBalance || 0) > 0).length;
 

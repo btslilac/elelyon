@@ -96,7 +96,7 @@ export default async function ArrearsReportPage() {
                           </div>
                         </td>
                       </tr>
-                    ) : report.rows.map((row) => (
+                    ) : report.rows.map((row: any) => (
                       <tr key={row.loanId} className="data-table-row">
                         <td className="data-td font-medium text-gray-900">{row.clientName}</td>
                         <td className="data-td text-gray-500 text-12">{row.clientPhone}</td>

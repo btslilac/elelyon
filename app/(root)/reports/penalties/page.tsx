@@ -100,7 +100,7 @@ export default async function PenaltiesReportPage({
                           <div className="data-empty"><p className="text-14 text-gray-500">No penalties in this period</p></div>
                         </td>
                       </tr>
-                    ) : report.rows.map((row) => (
+                    ) : report.rows.map((row: any) => (
                       <tr key={row.penaltyId} className="data-table-row">
                         <td className="data-td text-12 text-gray-500">
                           {new Date(row.dateApplied).toLocaleDateString("en-KE")}

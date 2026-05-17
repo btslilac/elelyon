@@ -6,7 +6,7 @@ import { ArrowRight, UserCheck, Briefcase, Calculator, Calendar, ShieldCheck, Fi
 
 export default async function CreateLoanPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const params = await searchParams;
-  const clients = await getClients() || [];
+  const clients = (await getClients()) || [];
 
   const handleCreateLoan = async (formData: FormData) => {
     "use server";

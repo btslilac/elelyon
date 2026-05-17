@@ -163,13 +163,11 @@ export const processRepayment = async ({
         action: "REPAYMENT_CREATED",
         performedBy,
         userId: loggedInUser?.$id || loggedInUser?.userId || "system",
-        description: `Repayment of KES ${amount.toLocaleString()} logged via ${paymentMethod}${
-          referenceId ? ` (Ref: ${referenceId})` : ""
-        }${
-          isBackdated
+        description: `Repayment of KES ${amount.toLocaleString()} logged via ${paymentMethod}${referenceId ? ` (Ref: ${referenceId})` : ""
+          }${isBackdated
             ? ` [Backdated to ${new Date(effectiveDate).toLocaleDateString("en-KE")}]`
             : ""
-        }.`,
+          }.`,
         previousValue: String(loan.balance),
         newValue: String(newBalance),
       });

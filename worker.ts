@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { Worker, Job } from 'bullmq';
-import cron from 'node-cron';
+import { schedule } from 'node-cron';
 import { redisConnection } from './lib/redis';
 import { NotificationService } from './lib/notifications';
 import { CollectionsService } from './lib/services/collections.service';
@@ -25,7 +25,7 @@ const notificationWorker = new Worker(
     try {
       // Enriched data fetching if placeholders are missing
       const supabase = createSupabaseAdminClient();
-      
+
       const { data: loan } = await supabase
         .from('loans')
         .select('*, clients(*)')
@@ -74,7 +74,7 @@ const notificationWorker = new Worker(
       throw error; // Let BullMQ handle retries
     }
   },
-  { 
+  {
     connection: redisConnection,
     concurrency: 5 // Process 5 notifications in parallel
   }
@@ -92,7 +92,7 @@ notificationWorker.on('failed', (job, err) => {
  * 2. Automated Scheduler (Cron)
  * Runs daily at 8:00 AM EAT (Africa/Nairobi)
  */
-cron.schedule('0 8 * * *', async () => {
+schedule('0 8 * * *', async () => {
   console.log('⏰ Running daily collection scan [08:00 EAT]...');
   try {
     const count = await CollectionsService.scanAndEnqueueReminders();
@@ -108,7 +108,7 @@ cron.schedule('0 8 * * *', async () => {
  * 3. Escalation Scanner
  * Runs daily at 9:00 AM EAT
  */
-cron.schedule('0 9 * * *', async () => {
+schedule('0 9 * * *', async () => {
   console.log('⏰ Running overdue escalation scan [09:00 EAT]...');
   // Logic for 30-day escalation can be added here
 }, {

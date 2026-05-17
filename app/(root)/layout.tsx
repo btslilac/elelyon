@@ -18,7 +18,6 @@ export default async function RootLayout({
   return (
     <main className="flex h-screen w-full bg-background antialiased selection:bg-accent/20 selection:text-accent">
       <Sidebar user={loggedIn} />
-
       {/* Column: mobile header (fixed) + scrollable canvas */}
       <div className="flex size-full flex-col overflow-hidden relative">
         {/* Mobile Header — stays at top */}
@@ -30,10 +29,13 @@ export default async function RootLayout({
                 alt="El Elyon Logo"
                 width={40}
                 height={40}
-                style={{ objectFit: 'contain' }}
                 priority
                 loading="eager"
-              />
+                style={{
+                  objectFit: 'contain',
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
             </div>
             <h1 className="text-16 font-semibold text-gray-900 tracking-tight">El Elyon</h1>
           </Link>
@@ -51,6 +53,5 @@ export default async function RootLayout({
         </div>
       </div>
     </main>
-
   );
 }

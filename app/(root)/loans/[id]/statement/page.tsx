@@ -42,7 +42,7 @@ export default async function StatementPage({
     .filter((p) => p.status === "Active")
     .reduce((a, p) => a + p.amount, 0);
 
-  const statementNumber = `STM-${id.slice(-6).toUpperCase()}-${Date.now().toString(36).toUpperCase().slice(-4)}`;
+  const statementNumber = `STM-${id.slice(-6).toUpperCase()}-${id.slice(0, 4).toUpperCase()}`;
   const generatedOn = new Date().toLocaleDateString("en-KE", {
     day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
@@ -114,7 +114,6 @@ export default async function StatementPage({
         </Link>
         <PrintButton />
       </div>
-
       {/* Statement Document */}
       <div className="statement-page">
 
@@ -129,7 +128,10 @@ export default async function StatementPage({
                 height={160}
                 alt="El Elyon Logo"
                 className="statement-logo-img"
-              />
+                style={{
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
 
               <div className="statement-company-text">
                 <h1 className="statement-brand">EL ELYON</h1>
@@ -140,7 +142,7 @@ export default async function StatementPage({
             </div>
 
             <div className="statement-contact-info">
-              <p className="statement-contact-text">Patel's, Ondiek Highway, Kisumu, Kenya</p>
+              <p className="statement-contact-text">Patel&apos;s, Ondiek Highway, Kisumu, Kenya</p>
               <p className="statement-contact-text">Email: info@elelyon.co.ke | Phone: +254 722 263 192</p>
               <p className="statement-contact-text">Website: www.elelyon.co.ke</p>
             </div>
@@ -187,13 +189,16 @@ export default async function StatementPage({
                 alt="Client Portrait"
                 className="passport-img"
                 priority
-              />
+                style={{
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
             ) : (
               <div className="passport-placeholder">
                 <p>No Photo</p>
               </div>
             )}
-            <div className="passport-label">CLIENT'S PHOTO</div>
+            <div className="passport-label">CLIENT&apos;S PHOTO</div>
           </div>
         </div>
 
@@ -454,7 +459,7 @@ export default async function StatementPage({
         {/* Footer Tagline */}
         <div style={{ marginTop: "2.5rem", textAlign: "center" }}>
           <p style={{ fontSize: "0.875rem", fontStyle: "italic", color: "#6B7280", fontWeight: 500 }}>
-            "Your financial partner in times of need."
+            &ldquo;Your financial partner in times of need.&rdquo;
           </p>
         </div>
       </div>

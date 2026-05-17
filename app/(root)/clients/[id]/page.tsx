@@ -30,7 +30,7 @@ export default async function ClientDetailsPage({ params }: SearchParamProps) {
 
       <div className="flex flex-col gap-10">
         {/* Header Section */}
-        <ClientDetailsHeader client={client} penalties={penalties} />
+        <ClientDetailsHeader client={client} penalties={penalties} loans={loans} />
 
         {/* Tabbed Content */}
         <div className="mt-4">

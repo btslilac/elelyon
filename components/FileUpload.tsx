@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { useDropzone, FileRejection, DropEvent } from 'react-dropzone';
 import { UploadCloud, X, FileImage, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
+import Image from "next/image";
 
 interface FileUploadProps {
   onFileSelect?: (file: File | null) => void;
@@ -79,7 +79,6 @@ export default function FileUpload({
   return (
     <div className={cn("w-full", className)}>
       <label className="text-14 font-medium text-gray-700 mb-2 block">{label}</label>
-      
       <div
         {...getRootProps()}
         className={cn(

@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image from "next/image";
 import Link from 'next/link';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -79,7 +79,6 @@ const AuthForm = ({ type }: { type: string }) => {
 
   return (
     <div className="auth-page">
-
       {/* ── Left Brand Panel ── */}
       <div className="auth-panel-left">
         <div className="auth-blob auth-blob-1" />
@@ -89,7 +88,15 @@ const AuthForm = ({ type }: { type: string }) => {
           {/* Brand mark */}
           <div className="auth-brand">
             <div className="auth-logo">
-              <Image src="/icons/logo.svg" width={120} height={120} alt="logo" />
+              <Image
+                src="/icons/logo.svg"
+                width={120}
+                height={120}
+                alt="logo"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
             </div>
             <span className="auth-brand-name">El Elyon</span>
           </div>
@@ -133,7 +140,6 @@ const AuthForm = ({ type }: { type: string }) => {
           </div>
         </div>
       </div>
-
       {/* ── Right Form Panel ── */}
       <div className="auth-panel-right">
         <div className="auth-form-wrap">
@@ -141,7 +147,15 @@ const AuthForm = ({ type }: { type: string }) => {
           {/* Mobile logo (hidden on desktop) */}
           <div className="auth-mobile-brand">
             <div className="auth-logo-dark">
-              <Image src="/icons/logo.svg" width={36} height={36} alt="logo" />
+              <Image
+                src="/icons/logo.svg"
+                width={36}
+                height={36}
+                alt="logo"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto"
+                }} />
             </div>
             <span className="auth-mobile-brand-name">El Elyon</span>
           </div>

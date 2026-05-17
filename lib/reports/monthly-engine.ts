@@ -171,7 +171,7 @@ export async function generateMonthlySnapshot(
     .or(`closed_at.is.null,closed_at.gte.${periodStart}`);
 
   if (lErr) throw lErr;
-  const periodLoans = loans ?? [];
+  const periodLoans = (loans ?? []) as any[];
 
   // ── Step 2: Fetch repayments and penalties for this period ───────────────
   const loanIds = periodLoans.map((l) => l.id);

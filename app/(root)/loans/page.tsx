@@ -5,7 +5,7 @@ import { ArrowUpRight, Activity, Clock, AlertTriangle, CheckCircle2 } from "luci
 import LoansTable from "@/components/LoansTable";
 
 export default async function LoansPage() {
-  const loans = await getLoans() || [];
+  const loans = (await getLoans()) || [];
 
   const activeLoans = loans.filter((l: any) => l.status === 'Active').length;
   const pendingLoans = loans.filter((l: any) => l.status === 'Pending').length;

@@ -91,7 +91,7 @@ export default async function LoanDetailPage({
       {/* Page Header */}
       <header className="page-header">
         <HeaderBox
-          title={`Origination ${id.slice(-8).toUpperCase()}`}
+          title={`${client?.firstName} ${client?.lastName}`}
           subtext={
             <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
               <span
@@ -104,21 +104,24 @@ export default async function LoanDetailPage({
               >
                 {loan.status}
               </span>
+               <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 500 }}>
+                
+                {`Loan No. - ${id.slice(-8).toUpperCase()}`}
+              </span>
+              
+             
+              <span style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>·</span>
               {loan.loanType && (
                 <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 500 }}>
                   {loan.loanType}
                 </span>
               )}
-              <span style={{ fontSize: "0.75rem", color: "#9CA3AF" }}>·</span>
-              <span style={{ fontSize: "0.75rem", color: "#6B7280", fontWeight: 500 }}>
-                {client?.firstName} {client?.lastName}
-              </span>
             </div>
           }
         />
         <div style={{ display: "flex", gap: "0.75rem", flexShrink: 0 }}>
           <Link href="/loans" className="btn-secondary">
-            ← Portfolio
+            ← Loans
           </Link>
           <Link href={`/loans/${id}/statement`} className="btn-primary">
             Statement

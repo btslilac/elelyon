@@ -34,7 +34,7 @@ const loanStatusColor: Record<string, string> = {
   Denied: "bg-gray-100 text-gray-500",
 };
 
-const loanStatusIcon: Record<string, JSX.Element> = {
+const loanStatusIcon: Record<string, React.ReactNode> = {
   Active: <CheckCircle className="size-3" />,
   Completed: <CheckCircle className="size-3" />,
   Pending: <Clock className="size-3" />,
@@ -370,7 +370,7 @@ export default function ClientTabs({ client, loans, repayments, penalties, audit
 }
 
 /* ── reusable empty state ── */
-function EmptyState({ icon, title, desc, action }: { icon: JSX.Element; title: string; desc: string; action?: React.ReactNode }) {
+function EmptyState({ icon, title, desc, action }: { icon: React.ReactNode; title: string; desc: string; action?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 text-center">
       <div className="p-4 bg-white rounded-full shadow-sm mb-4 text-gray-300">

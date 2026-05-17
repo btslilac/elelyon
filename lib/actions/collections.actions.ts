@@ -54,7 +54,7 @@ export async function scheduleLoanReminders(loanId: string) {
     if (!loan?.due_date) return;
 
     const dueDate = new Date(loan.due_date);
-    
+
     // Timeline: 7 days before, 3 days before, Due Date, 3 days overdue, 7 days overdue
     const timelines = [
       { type: 'PAYMENT_REMINDER', days: -7 },
@@ -110,7 +110,7 @@ export async function getNotifications(params: { clientId?: string; loanId?: str
 export async function getCommunicationAnalytics() {
   try {
     const supabase = createSupabaseAdminClient();
-    
+
     const { data: notifications } = await supabase
       .from('notifications')
       .select('status, channel, template_type');

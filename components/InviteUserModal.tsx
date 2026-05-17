@@ -25,8 +25,6 @@ export default function InviteUserModal({ onSuccess }: Props) {
   useEffect(() => {
     if (open) {
       setTimeout(() => firstRef.current?.focus(), 80);
-      setResult(null);
-      setForm({ firstName: '', lastName: '', email: '', role: 'STAFF' });
     }
   }, [open]);
 
@@ -97,7 +95,11 @@ export default function InviteUserModal({ onSuccess }: Props) {
     <>
       {/* Trigger Button */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setResult(null);
+          setForm({ firstName: '', lastName: '', email: '', role: 'STAFF' });
+          setOpen(true);
+        }}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '0.6rem 1.25rem',

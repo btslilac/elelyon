@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 import { processAutomatedReminders } from '@/lib/actions/collections.actions';
 
 /**

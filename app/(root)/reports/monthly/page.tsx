@@ -1,6 +1,7 @@
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { listMonthlyReportsAction, generateMonthlySnapshotAction } from "@/lib/actions/report.actions";
-import { redirect, revalidatePath } from "next/navigation";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import HeaderBox from "@/components/HeaderBox";
 import Link from "next/link";
 import { Calendar, Plus, FileBarChart } from "lucide-react";

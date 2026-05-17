@@ -22,6 +22,7 @@ export interface SendNotificationParams {
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const AT_USERNAME = process.env.AT_USERNAME || '';
 const AT_API_KEY = process.env.AT_API_KEY || '';
+const AT_SENDER_ID = process.env.AT_SENDER_ID || ''; // Alphanumeric or Shortcode
 const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID || '';
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
 const TWILIO_PHONE = process.env.TWILIO_PHONE_NUMBER || '';
@@ -132,8 +133,23 @@ export class NotificationService {
       const response = await sms.send({
         to: [to],
         message,
+        from: AT_SENDER_ID || undefined,
         enqueue: true
       });
+
+      // Persist each recipient's AT messageId so the delivery webhook can update it
+      const recipients: any[] = response?.SMSMessageData?.Recipients ?? [];
+      if (recipients.length > 0) {
+        const supabase = createSupabaseAdminClient();
+        const rows = recipients.map((r: any) => ({
+          message_id: r.messageId,
+          phone_number: r.number,
+          message_body: message,
+          delivery_status: r.status ?? 'Sent',
+        }));
+        await supabase.from('sms_logs').upsert(rows, { onConflict: 'message_id' });
+      }
+
       return response;
     } catch (atError) {
       console.warn("Africa's Talking failed or skipped, trying Twilio fallback...", atError);
