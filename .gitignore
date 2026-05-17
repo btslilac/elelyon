@@ -8,6 +8,9 @@
 .env
 .env.production
 .env.local
+.agent/
+.agents/
+.gemini/
 
 # testing
 /coverage
