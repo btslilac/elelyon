@@ -1,119 +1,34 @@
 import { formatAmount, cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, CreditCard, Activity, CalendarCheck, Clock } from "lucide-react";
+import type { ClientMetrics } from "@/lib/metrics";
 
 interface ClientOverviewProps {
-  client: LMSClient;
-  loans: any[];
-  repayments: any[];
-  penalties: any[];
+  client: any;
+  clientMetrics: ClientMetrics;
 }
 
+export default function ClientOverview({ client, clientMetrics }: ClientOverviewProps) {
+  const {
+    totalBorrowed,
+    totalOutstanding,
+    totalExpectedDebt,
+    totalRepaid,
+    repaymentRate,
+    activeLoansCount,
+    healthStatus,
+    healthMessage,
+    healthColor,
+    healthBg,
+    healthIconBg,
+    healthBarBg,
+    healthBarContainer,
+    lastPaymentDate,
+    nextDueDate,
+    maxDaysPastDue
+  } = clientMetrics || {};
 
-
-export default function ClientOverview({ client, loans, repayments, penalties }: ClientOverviewProps) {
-  const activeLoans = loans.filter(l => l.status === 'Active' || l.status === 'Overdue').length;
-  const totalRepaid = repayments.reduce((acc, r) => acc + r.amount, 0);
-
-
-
-
-  const validStatuses = ['Active', 'Overdue', 'Completed', 'Defaulted'];
-
-  // Calculate total outstanding perfectly from the sum of all valid loan balances
-  // The backend ledger automatically synchronizes loan.balance with all penalty additions and all repayments.
-  const totalOutstanding = loans
-    .filter(l => validStatuses.includes(l.status))
-    .reduce((acc, l) => acc + (l.balance || 0), 0);
-  const totalExpectedDebt = loans
-    .filter(l => validStatuses.includes(l.status))
-    .reduce((acc, l) => acc + (l.totalPayable || 0), 0)
-    + penalties
-      .filter(p => p.status !== 'Reversed')
-      .reduce((acc, p) => acc + p.amount, 0);
-
-  const repaymentRate = totalExpectedDebt > 0
-    ? Math.min(100, Math.round((totalRepaid / totalExpectedDebt) * 100))
-    : 0;
-
-  let healthStatus = 'No Loans';
-  let healthMessage = 'No loans taken yet.';
-  let healthColor = 'text-gray-600';
-  let healthBg = 'bg-gray-200';
-  let healthIconBg = 'bg-gray-50';
-  let healthBarBg = 'bg-gray-500';
-  let healthBarContainer = 'bg-gray-100';
-
-  if (loans.length > 0) {
-    const firstLoan = [...loans].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
-    const isAfterFirstDue = new Date() >= new Date(firstLoan.due_date);
-    const hasOverdue = loans.some(l => l.status === 'Overdue');
-
-    if (!isAfterFirstDue && !hasOverdue) {
-      healthStatus = 'New';
-      healthMessage = 'Your first payment is not due yet.';
-      healthColor = 'text-sky-600';
-      healthBg = 'bg-sky-200';
-      healthIconBg = 'bg-sky-50';
-      healthBarBg = 'bg-sky-500';
-      healthBarContainer = 'bg-sky-100';
-    } else if (hasOverdue) {
-      healthStatus = 'Overdue';
-      healthMessage = 'You have an overdue payment that needs immediate attention!';
-      healthColor = 'text-red-600';
-      healthBg = 'bg-red-200';
-      healthIconBg = 'bg-red-50';
-      healthBarBg = 'bg-red-500';
-      healthBarContainer = 'bg-red-100';
-    } else {
-      if (repaymentRate >= 90) {
-        healthStatus = 'Good';
-        healthMessage = 'Your repayment rate is excellent!';
-        healthColor = 'text-emerald-600';
-        healthBg = 'bg-emerald-200';
-        healthIconBg = 'bg-emerald-50';
-        healthBarBg = 'bg-emerald-500';
-        healthBarContainer = 'bg-emerald-100';
-      } else if (repaymentRate >= 75) {
-        healthStatus = 'On Track';
-        healthMessage = 'You are on track with your repayments.';
-        healthColor = 'text-blue-600';
-        healthBg = 'bg-blue-200';
-        healthIconBg = 'bg-blue-50';
-        healthBarBg = 'bg-blue-500';
-        healthBarContainer = 'bg-blue-100';
-      } else if (repaymentRate >= 50) {
-        healthStatus = 'Average';
-        healthMessage = 'Your repayment rate is average.';
-        healthColor = 'text-amber-600';
-        healthBg = 'bg-amber-200';
-        healthIconBg = 'bg-amber-50';
-        healthBarBg = 'bg-amber-500';
-        healthBarContainer = 'bg-amber-100';
-      } else if (repaymentRate >= 20) {
-        healthStatus = 'Needs Improvement';
-        healthMessage = 'Your repayment rate needs improvement.';
-        healthColor = 'text-orange-600';
-        healthBg = 'bg-orange-200';
-        healthIconBg = 'bg-orange-50';
-        healthBarBg = 'bg-orange-500';
-        healthBarContainer = 'bg-orange-100';
-      } else {
-        healthStatus = 'Bad';
-        healthMessage = 'Your repayment rate is poor, please repay your loans in time!';
-        healthColor = 'text-red-600';
-        healthBg = 'bg-red-200';
-        healthIconBg = 'bg-red-50';
-        healthBarBg = 'bg-red-500';
-        healthBarContainer = 'bg-red-100';
-      }
-    }
-  }
-
-  const lastPayment = repayments[0];
-  const nextDue = loans.filter(l => l.status === 'Active').sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
-
-  const formattedLastPayment = lastPayment
-    ? new Date(lastPayment.date).toLocaleString('en-GB', {
+  const formattedLastPayment = lastPaymentDate
+    ? new Date(lastPaymentDate).toLocaleString('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -123,8 +38,8 @@ export default function ClientOverview({ client, loans, repayments, penalties }:
     })
     : 'None';
 
-  const formattedNextDue = nextDue
-    ? new Date(nextDue.due_date).toLocaleString('en-GB', {
+  const formattedNextDue = nextDueDate
+    ? new Date(nextDueDate).toLocaleString('en-GB', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -132,20 +47,19 @@ export default function ClientOverview({ client, loans, repayments, penalties }:
       minute: '2-digit',
       hour12: false,
     })
-    : 'No active loans';
-
+    : 'None due';
 
   const metrics = [
     {
       label: "Total Borrowed",
-      value: formatAmount(client.totalBorrowed),
+      value: formatAmount(client?.totalBorrowed || totalBorrowed || 0),
       icon: <TrendingUp className="size-4" />,
       color: "text-blue-600",
       bg: "bg-blue-50"
     },
     {
       label: "Outstanding Balance",
-      value: formatAmount(totalOutstanding),
+      value: formatAmount(totalOutstanding || 0),
       icon: <TrendingDown className="size-4" />,
       color: "text-red-600",
       bg: "bg-red-50"
@@ -159,7 +73,7 @@ export default function ClientOverview({ client, loans, repayments, penalties }:
     },
     {
       label: "Active Loans",
-      value: activeLoans.toString(),
+      value: (activeLoansCount || 0).toString(),
       icon: <Activity className="size-4" />,
       color: "text-orange-600",
       bg: "bg-orange-50"
@@ -209,6 +123,11 @@ export default function ClientOverview({ client, loans, repayments, penalties }:
                 <p className="text-14 font-semibold text-gray-900">
                   {formattedNextDue}
                 </p>
+                {maxDaysPastDue > 0 && (
+                  <p className="text-12 font-semibold text-red-600 mt-1">
+                    Days Past Due: {maxDaysPastDue} (DPD)
+                  </p>
+                )}
               </div>
               <div className="flex justify-end p-3 bg-gray-50 rounded-full text-gray-400">
                 <Clock className="size-5 " />

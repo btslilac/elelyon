@@ -1,4 +1,5 @@
 import { getClientFullProfile } from "@/lib/actions/client.actions";
+import { calculateClientMetrics } from "@/lib/metrics";
 import ClientDetailsHeader from "@/components/details/ClientDetailsHeader";
 import ClientTabs from "@/components/details/ClientTabs";
 import { notFound } from "next/navigation";
@@ -8,6 +9,7 @@ import Link from "next/link";
 export default async function ClientDetailsPage({ params }: SearchParamProps) {
   const { id } = await params;
   const profile = await getClientFullProfile(id);
+  const clientMetrics = await calculateClientMetrics(id);
 
   if (!profile) {
     notFound();
@@ -42,6 +44,7 @@ export default async function ClientDetailsPage({ params }: SearchParamProps) {
             auditLogs={auditLogs}
             notifications={notifications}
             documents={documents}
+            clientMetrics={clientMetrics}
           />
         </div>
       </div>

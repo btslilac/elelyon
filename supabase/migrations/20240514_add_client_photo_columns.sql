@@ -16,24 +16,28 @@ ON CONFLICT (id) DO NOTHING;
 -- 3. Set up Storage RLS Policies
 
 -- Policy: Allow public to view client assets (if public=true)
-CREATE POLICY "Public Access"
+DROP POLICY IF EXISTS "Public Access for client-assets" ON storage.objects;
+CREATE POLICY "Public Access for client-assets"
 ON storage.objects FOR SELECT
 USING ( bucket_id = 'client-assets' );
 
 -- Policy: Allow authenticated users to upload client assets
-CREATE POLICY "Authenticated users can upload"
+DROP POLICY IF EXISTS "Authenticated users can upload client assets" ON storage.objects;
+CREATE POLICY "Authenticated users can upload client assets"
 ON storage.objects FOR INSERT 
 TO authenticated
 WITH CHECK ( bucket_id = 'client-assets' );
 
 -- Policy: Allow authenticated users to update their uploads
-CREATE POLICY "Authenticated users can update"
+DROP POLICY IF EXISTS "Authenticated users can update client assets" ON storage.objects;
+CREATE POLICY "Authenticated users can update client assets"
 ON storage.objects FOR UPDATE
 TO authenticated
 USING ( bucket_id = 'client-assets' );
 
 -- Policy: Allow authenticated users to delete client assets
-CREATE POLICY "Authenticated users can delete"
+DROP POLICY IF EXISTS "Authenticated users can delete client assets" ON storage.objects;
+CREATE POLICY "Authenticated users can delete client assets"
 ON storage.objects FOR DELETE
 TO authenticated
 USING ( bucket_id = 'client-assets' );

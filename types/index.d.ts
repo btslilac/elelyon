@@ -57,7 +57,10 @@ declare type LoanStatus =
   | "Approved"
   | "Active"
   | "Overdue"
+  | "Substandard"
+  | "Loss"
   | "Completed"
+  | "Fully Paid"
   | "Defaulted"
   | "Denied";
 
@@ -71,6 +74,8 @@ declare type PenaltyType =
   | "Daily Overdue Interest"
   | "Manual Administrative Charge"
   | "Restructuring Fee"
+  | "Rollover Fee"
+  | "Auto Late Fee"
   | "Recovery Fee"
   | "Legal Fee"
   | "Custom Penalty";
@@ -137,6 +142,12 @@ declare type Loan = {
   documentUrl?: string;
   createdBy?: string;
   isHighRisk?: boolean;
+  lifecycleState?: string;
+  daysPastDue?: number;
+  remainingPrincipal?: number;
+  remainingInterest?: number;
+  remainingPenalties?: number;
+  remainingFees?: number;
 };
 
 declare type Repayment = {
@@ -191,6 +202,10 @@ declare interface MobileNavProps {
   user: User;
 }
 
+declare interface TabletNavProps {
+  user: User;
+}
+
 declare interface FooterProps {
   user: User;
   type?: "mobile" | "desktop";
@@ -222,4 +237,88 @@ declare interface PenaltyModalProps {
   currentUser: User;
   onClose: () => void;
 }
+
+declare interface WriteOffModalProps {
+  loanId: string;
+  currentUser: User;
+  onClose: () => void;
+}
+
+declare type LoanInstallment = {
+  $id: string;
+  loanId: string;
+  clientId: string;
+  installmentNumber: number;
+  dueDate: string;
+  principalDue: number;
+  interestDue: number;
+  feesDue: number;
+  penaltiesDue: number;
+  principalPaid: number;
+  interestPaid: number;
+  feesPaid: number;
+  penaltiesPaid: number;
+  amountDue: number;
+  amountPaid: number;
+  isSettled: boolean;
+  status: string;
+  paidDate?: string;
+  modificationId?: string;
+  createdAt: string;
+};
+
+declare type LoanTransaction = {
+  $id: string;
+  loanId: string;
+  clientId: string;
+  amount: number;
+  type: 'Repayment' | 'Disbursement' | 'Manual Penalty' | 'Restructure Adjustment' | 'Waiver';
+  paymentMethod?: string;
+  referenceId?: string;
+  comment?: string;
+  appliedBy?: string;
+  status: string;
+  allocatedFees: number;
+  allocatedPenalties: number;
+  allocatedOverdueInterest: number;
+  allocatedCurrentInterest: number;
+  allocatedOverduePrincipal: number;
+  allocatedCurrentPrincipal: number;
+  allocatedToWallet: number;
+  date: string;
+  createdAt: string;
+};
+
+declare type LoanModification = {
+  id: string;
+  loanId: string;
+  modificationType: 'RESTRUCTURE';
+  prePrincipal: number;
+  preInterestRate: number;
+  preDurationMths: number;
+  preInterestType: string;
+  preRemainingPrincipal: number;
+  preRemainingInterest: number;
+  principalAdjustment: number;
+  interestAdjustment: number;
+  postPrincipal: number;
+  postInterestRate: number;
+  postDurationMths: number;
+  postInterestType: string;
+  postRemainingPrincipal: number;
+  postRemainingInterest: number;
+  executedBy?: string;
+  reason: string;
+  createdAt: string;
+};
+
+declare type JournalEntry = {
+  id: string;
+  modificationId: string;
+  accountCode: string;
+  entryType: 'DEBIT' | 'CREDIT';
+  amount: number;
+  createdAt: string;
+};
+
 

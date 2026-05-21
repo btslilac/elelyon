@@ -22,6 +22,7 @@ interface ClientTabsProps {
   auditLogs: any[];
   notifications: any[];
   documents?: any[];
+  clientMetrics?: any;
 }
 
 /* ── helpers ── */
@@ -47,7 +48,7 @@ function fmt(d: string) {
   return d ? new Date(d).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" }) : "—";
 }
 
-export default function ClientTabs({ client, loans, repayments, penalties, auditLogs, notifications = [], documents = [] }: ClientTabsProps) {
+export default function ClientTabs({ client, loans, repayments, penalties, auditLogs, notifications = [], documents = [], clientMetrics }: ClientTabsProps) {
   const [isUploading, startTransition] = useTransition();
   const [selectedDocType, setSelectedDocType] = useState("OTHER");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -106,7 +107,7 @@ export default function ClientTabs({ client, loans, repayments, penalties, audit
       {/* ── OVERVIEW ── */}
       <TabsContent value="overview" className="focus-visible:outline-none">
         <div className="flex flex-col gap-10 animate-fade-in">
-          <ClientOverview client={client} loans={loans} repayments={repayments} penalties={penalties} />
+          <ClientOverview client={client} clientMetrics={clientMetrics} />
           <ActivityTimeline logs={auditLogs} />
         </div>
       </TabsContent>

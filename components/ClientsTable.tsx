@@ -2,10 +2,23 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, UsersRound, Phone, MessageSquare, PlusCircle, Download, ListChecks, AlertTriangle, UserCog, Eye } from 'lucide-react';
+import { Search, UsersRound, Phone, MessageSquare, PlusCircle, Download, ListChecks, AlertTriangle, UserCog, Eye, ChevronUp, ChevronDown } from 'lucide-react';
 import { formatAmount } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import ClientAvatar from '@/components/ClientAvatar';
+import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableResponsiveGrid,
+  TableResponsiveCard,
+  TableResponsiveCardHeader,
+  TableResponsiveCardContent,
+} from '@/components/ui/table';
 
 interface Client {
   $id: string;
@@ -21,6 +34,8 @@ interface Client {
 
 export default function ClientsTable({ clients }: { clients: Client[] }) {
   const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'arrears'>('all');
 
   const filtered = useMemo(() => {
@@ -78,7 +93,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left Side: Tabs */}
         <div className="status-filter-group w-fit">
-          <button
+          <Button
             onClick={() => setActiveTab('all')}
             className={cn('status-filter-pill', activeTab === 'all' && 'status-filter-pill-active')}
           >
@@ -86,8 +101,8 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
               <UsersRound className="size-3.5" />
               <span>All Clients</span>
             </div>
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setActiveTab('active')}
             className={cn('status-filter-pill', activeTab === 'active' && 'status-filter-pill-active')}
           >
@@ -95,8 +110,8 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
               <ListChecks className="size-3.5" />
               <span>Active Loans</span>
             </div>
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setActiveTab('arrears')}
             className={cn('status-filter-pill', activeTab === 'arrears' && 'status-filter-pill-active')}
           >
@@ -104,7 +119,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
               <AlertTriangle className="size-3.5" />
               <span>In Arrears</span>
             </div>
-          </button>
+          </Button>
         </div>
 
         {/* Right Side: Search & Export */}
@@ -124,9 +139,9 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
           </button>
         </div>
       </div>
-      <div className="data-table-wrap">
+      <div className="data-table-wrap lg:block hidden">
         <div className="data-table-scroll">
-          <table className="data-table">
+          <Table className="data-table">
             <colgroup>
               <col style={{ width: '32%' }} />
               <col style={{ width: '18%' }} />
@@ -135,24 +150,24 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
               <col style={{ width: '14%' }} />
               <col style={{ width: '10%' }} />
             </colgroup>
-            <thead>
-              <tr className="data-table-head-row">
-                <th className="data-th text-left">Client</th>
-                <th className="data-th text-left">ID / Phone</th>
-                <th className="data-th text-left">Status</th>
-                <th className="data-th text-right">Disbursed</th>
-                <th className="data-th text-right">Balance</th>
-                <th className="data-th text-right">Quick Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+            <TableHeader>
+              <TableRow className="data-table-head-row">
+                <TableHead className="data-th text-left">Client</TableHead>
+                <TableHead className="data-th text-left">ID / Phone</TableHead>
+                <TableHead className="data-th text-left">Status</TableHead>
+                <TableHead className="data-th text-right">Disbursed</TableHead>
+                <TableHead className="data-th text-right">Balance</TableHead>
+                <TableHead className="data-th text-right">Quick Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filtered.map((client) => {
                 const isArrears = (client.outstandingBalance || 0) > 0;
                 const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}`;
 
                 return (
-                  <tr key={client.$id} className="data-table-row group/row">
-                    <td className="data-td">
+                  <TableRow key={client.$id} className="data-table-row group/row">
+                    <TableCell className="data-td">
                       <div className="flex items-center gap-3">
                         <ClientAvatar
                           firstName={client.firstName}
@@ -170,29 +185,29 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
                           <span className="client-email">{client.email}</span>
                         </div>
                       </div>
-                    </td>
-                    <td className="data-td">
+                    </TableCell>
+                    <TableCell className="data-td">
                       <div className="flex flex-col gap-1">
                         <span className="mono-pill">{client.nationalId}</span>
                         <span className="text-12 text-gray-500">{client.phone}</span>
                       </div>
-                    </td>
-                    <td className="data-td">
+                    </TableCell>
+                    <TableCell className="data-td">
                       {isArrears ? (
                         <span className="badge badge-error">Arrears</span>
                       ) : (
                         <span className="badge badge-success">Active</span>
                       )}
-                    </td>
-                    <td className="data-td text-right">
+                    </TableCell>
+                    <TableCell className="data-td text-right">
                       <span className="amount-text">{formatAmount(client.totalBorrowed || 0)}</span>
-                    </td>
-                    <td className="data-td text-right">
+                    </TableCell>
+                    <TableCell className="data-td text-right">
                       <span className={cn('amount-text', isArrears ? 'text-red-600' : 'text-gray-900')}>
                         {formatAmount(client.outstandingBalance || 0)}
                       </span>
-                    </td>
-                    <td className="data-td text-right">
+                    </TableCell>
+                    <TableCell className="data-td text-right">
                       <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
                         <Link href={`/clients/${client.$id}`} className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors" title="View Profile">
                           <Eye className="size-4" />
@@ -207,13 +222,13 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
                           <UserCog className="size-4" />
                         </Link>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
               {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="data-empty-cell">
+                <TableRow>
+                  <TableCell colSpan={6} className="data-empty-cell">
                     <div className="data-empty">
                       <UsersRound className="size-8 text-gray-300" />
                       <p className="text-14 text-gray-600 font-medium mt-2">
@@ -223,13 +238,287 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
                         {query ? 'Try a different search term or check filters.' : 'Add clients to see them in the registry.'}
                       </p>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
+
+      {/* Mobile + Tablet Responsive Cards (Visible on md/sm, hidden on lg) */}
+      <TableResponsiveGrid
+        className="
+          lg:hidden
+          mt-8
+          mb-10
+          gap-5
+          p-6
+        "
+      >
+        {filtered.map((client) => {
+          const isOpen = expandedId === client.$id;
+          const isArrears = (client.outstandingBalance || 0) > 0;
+
+          return (
+            <TableResponsiveCard
+              key={client.$id}
+              className="
+                overflow-hidden
+                rounded-3xl
+                border border-slate-200/70
+                bg-white
+                shadow-sm
+                transition-all duration-300
+                hover:shadow-lg
+                hover:shadow-slate-200/50
+                p-5
+                cursor-pointer
+              "
+            >
+              {/* Header */}
+              <TableResponsiveCardHeader
+                onClick={() => setExpandedId(isOpen ? null : client.$id)}
+                className="
+                  p-5
+                  cursor-pointer
+                  flex
+                  items-center
+                  justify-between
+                  gap-4
+                "
+              >
+                <div className="flex items-center gap-4 min-w-0 translate-x-4">
+                  {/* Avatar */}
+                  <div className="shrink-0">
+                    <ClientAvatar
+                      firstName={client.firstName}
+                      lastName={client.lastName}
+                      photoUrl={client.profilePhotoUrl}
+                      size="md"
+                    />
+                  </div>
+
+                  {/* Client Info */}
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-[15px] text-slate-900 truncate">
+                      {client.firstName} {client.lastName}
+                    </h3>
+
+                    <p className="text-sm text-slate-500 truncate mt-0.5">
+                      {client.email || "No email provided"}
+                    </p>
+
+                    <div className="mt-2.5">
+                      {isArrears ? (
+                        <span className="badge badge-error">Arrears</span>
+                      ) : (
+                        <span className="badge badge-success">Active</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expand Icon */}
+                <div className="shrink-0 text-slate-400">
+                  {isOpen ? (
+                    <ChevronUp size={18} />
+                  ) : (
+                    <ChevronDown size={18} />
+                  )}
+                </div>
+              </TableResponsiveCardHeader>
+
+              {/* Expandable Content */}
+              <TableResponsiveCardContent isOpen={isOpen}>
+                <div className="w-full space-y-4 px-4">
+                  {/* Summary Box */}
+                  <div
+                    className="
+                      rounded-2xl
+                      bg-slate-50
+                      p-4
+                      grid
+                      gap-4
+                      translate-y-2
+                    "
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500 translate-x-4">
+                        National ID
+                      </span>
+                      <span
+                        className="
+                          badge
+                          rounded-lg
+                          bg-slate-100
+                          px-2.5
+                          py-1
+                          text-xs
+                          font-mono
+                          border
+                          text-slate-700
+                          -translate-x-6
+                        "
+                      >
+                        {client.nationalId}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500 translate-x-4">
+                        Phone
+                      </span>
+                      <span className="text-sm font-medium text-slate-700 -translate-x-4">
+                        {client.phone}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500 translate-x-4">
+                        Total Disbursed
+                      </span>
+                      <span className="font-semibold text-slate-900 -translate-x-4">
+                        {formatAmount(client.totalBorrowed || 0)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-slate-500 translate-x-4">
+                        Outstanding Balance
+                      </span>
+                      <span className={cn("font-semibold", isArrears ? "text-red-600" : "text-slate-900", "-translate-x-4")}>
+                        {formatAmount(client.outstandingBalance || 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions Grid */}
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="
+                        rounded-xl
+                        h-10
+                        text-xs
+                        font-medium
+                        border-slate-200
+                        hover:bg-slate-50
+                        flex
+                        items-center
+                        justify-center
+                        gap-1.5
+                      "
+                    >
+                      <Link href={`/clients/${client.$id}`}>
+                        <Eye className="size-3.5 text-gray-500" />
+                        <span>Profile</span>
+                      </Link>
+                    </Button>
+
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="
+                        rounded-xl
+                        h-10
+                        text-xs
+                        font-medium
+                        border-slate-200
+                        hover:bg-slate-50
+                        flex
+                        items-center
+                        justify-center
+                        gap-1.5
+                      "
+                    >
+                      <a href={`tel:${client.phone}`}>
+                        <Phone className="size-3.5 text-gray-500" />
+                        <span>Call</span>
+                      </a>
+                    </Button>
+
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="
+                        rounded-xl
+                        h-10
+                        text-xs
+                        font-medium
+                        border-slate-200
+                        hover:bg-slate-50
+                        flex
+                        items-center
+                        justify-center
+                        gap-1.5
+                      "
+                    >
+                      <Link href={`/clients/${client.$id}/edit`}>
+                        <UserCog className="size-3.5 text-gray-500" />
+                        <span>Edit</span>
+                      </Link>
+                    </Button>
+
+                    <Button
+                      asChild
+                      className="
+                        rounded-xl
+                        h-10
+                        text-xs
+                        font-semibold
+                        bg-slate-900
+                        hover:bg-slate-800
+                        text-white
+                        flex
+                        items-center
+                        justify-center
+                        gap-1.5
+                      "
+                    >
+                      <Link href={`/loans/create?clientId=${client.$id}`}>
+                        <PlusCircle className="size-3.5" />
+                        <span>New Loan</span>
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </TableResponsiveCardContent>
+            </TableResponsiveCard>
+          );
+        })}
+
+        {filtered.length === 0 && (
+          <div
+            className="
+              rounded-3xl
+              border
+              border-slate-200
+              bg-white
+              p-10
+              text-center
+              shadow-sm
+              mx-auto
+              mt-10
+              w-full
+            "
+          >
+            <UsersRound className="size-6 mx-auto mb-3 text-slate-300 translate-4" />
+
+            <h3 className="font-semibold text-slate-700">
+              {query ? "No clients match your search" : "No Clients Found"}
+            </h3>
+
+            <p className="text-sm text-slate-400 mt-1">
+              {query ? "Try adjusting your search or filter." : "Add clients to see them in the registry."}
+            </p>
+            <br/>
+          </div>
+        )}
+      </TableResponsiveGrid>
+
+
     </div>
   );
 }

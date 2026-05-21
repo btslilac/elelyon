@@ -24,7 +24,7 @@ export default async function ClientsPage() {
       </header>
 
       {/* Client Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="card-premium flex flex-col justify-between group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10" style={{ backgroundColor: 'rgba(17,17,19,0.03)' }}></div>
           <div className="flex justify-between items-start mb-6">

@@ -1,5 +1,5 @@
 import { getLoanById } from "@/lib/actions/loan.actions";
-import { getRepaymentsByLoan } from "@/lib/actions/repayment.actions";
+import { getRepaymentsByLoan, getInstallmentsByLoan } from "@/lib/actions/repayment.actions";
 import { getPenaltiesByLoan } from "@/lib/actions/penalty.actions";
 import { getClientById } from "@/lib/actions/client.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
@@ -29,10 +29,11 @@ export default async function StatementPage({
     );
   }
 
-  const [client, repayments, penalties] = await Promise.all([
+  const [client, repayments, penalties, installments] = await Promise.all([
     getClientById(loan.clientId),
     getRepaymentsByLoan(id),
     getPenaltiesByLoan(id),
+    getInstallmentsByLoan(id),
   ]);
 
   const safeRepayments = repayments || [];
@@ -41,6 +42,12 @@ export default async function StatementPage({
   const activePenaltyTotal = safePenalties
     .filter((p) => p.status === "Active")
     .reduce((a, p) => a + p.amount, 0);
+
+  const initialInterest = installments && installments.length > 0
+    ? installments
+        .filter((inst) => (inst.principalDue ?? 0) > 0)
+        .reduce((sum, inst) => sum + (inst.interestDue ?? 0), 0)
+    : (loan.totalInterest || 0);
 
   const statementNumber = `STM-${id.slice(-6).toUpperCase()}-${id.slice(0, 4).toUpperCase()}`;
   const generatedOn = new Date().toLocaleDateString("en-KE", {
@@ -65,9 +72,9 @@ export default async function StatementPage({
       date: loan.startDate,
       type: "Disbursement",
       description: `Loan disbursed — ${loan.loanType || "Loan"}`,
-      debit: loan.totalPayable,
+      debit: loan.principalAmount + initialInterest,
       credit: 0,
-      balance: loan.totalPayable,
+      balance: loan.principalAmount + initialInterest,
     });
   }
 
@@ -205,6 +212,7 @@ export default async function StatementPage({
         <div className="statement-header-divider" />
 
         {/* Financial Summary Box */}
+        {/*
         <div className="statement-summary-box">
           <div className="statement-summary-item">
             <span className="statement-summary-label">Total Payable</span>
@@ -227,6 +235,7 @@ export default async function StatementPage({
             </span>
           </div>
         </div>
+        */}
 
         {/* Client Information */}
         <div className="statement-section">

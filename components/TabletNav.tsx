@@ -35,11 +35,11 @@ const iconMap: Record<string, React.ElementType> = {
   '/users': UserCog,
 }
 
-const MobileNav = ({ user }: MobileNavProps) => {
+const TabletNav = ({ user }: TabletNavProps) => {
   const pathname = usePathname();
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 md:hidden">
+    <div className="hidden md:block lg:hidden fixed top-4 left-1/2 -translate-x-1/2 z-50">
       <Sheet>
         {/* Floating Apple Button */}
         <SheetTrigger asChild>
@@ -89,7 +89,7 @@ const MobileNav = ({ user }: MobileNavProps) => {
             h-auto
             min-w-fit
             w-[92%]
-            max-w-[380px]
+            max-w-[500px]
             animate-in
             fade-in
             zoom-in-95
@@ -261,4 +261,4 @@ const MobileNav = ({ user }: MobileNavProps) => {
   )
 }
 
-export default MobileNav
+export default TabletNav

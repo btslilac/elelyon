@@ -1,21 +1,21 @@
 import HeaderBox from '@/components/HeaderBox'
-import { getLoggedInUser } from '@/lib/actions/user.actions';
-import { getLoanMetrics, getLoans } from '@/lib/actions/loan.actions';
-import { formatAmount } from '@/lib/utils';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { ArrowUpRight, TrendingUp, AlertCircle, Activity, CreditCard, ChevronRight } from 'lucide-react';
+import RecentLoansTable from '@/components/RecentLoansTable'
+import { getLoggedInUser } from '@/lib/actions/user.actions'
+import { getLoanMetrics, getLoans } from '@/lib/actions/loan.actions'
+import { formatAmount } from '@/lib/utils'
+import Link from 'next/link'
+import { ArrowUpRight, TrendingUp, AlertCircle, Activity, ChevronRight } from 'lucide-react'
 
 const Home = async () => {
   const [loggedIn, loanMetrics, recentLoansResponse] = await Promise.all([
     getLoggedInUser(),
     getLoanMetrics(),
     getLoans()
-  ]);
+  ])
 
-  const recentLoans = recentLoansResponse || [];
-  const activeCount = recentLoans.filter((l: any) => l.status === 'Active').length;
-  const overdueCount = recentLoans.filter((l: any) => l.status === 'Overdue').length;
+  const recentLoans = recentLoansResponse || []
+  const activeCount = recentLoans.filter((l: any) => l.status === 'Active').length
+  const overdueCount = recentLoans.filter((l: any) => l.status === 'Overdue').length
 
   return (
     <section className="home-content animate-fade-in">
@@ -35,8 +35,8 @@ const Home = async () => {
       </header>
 
       {/* KPI Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card-premium flex flex-col justify-between group">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="card-premium flex flex-col justify-between group relative overflow-hidden">
           <div className="flex justify-between items-start mb-6">
             <p className="text-12 font-bold text-gray-500 uppercase tracking-widest">Total Disbursed</p>
             <div className="p-2 bg-gray-50 rounded-lg text-gray-700 ring-1 ring-gray-200/50 group-hover:bg-gray-100 transition-colors">
@@ -99,80 +99,7 @@ const Home = async () => {
           </Link>
         </div>
 
-        <div className="data-table-wrap">
-          <div className="data-table-scroll">
-            <table className="data-table">
-              <colgroup>
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '38%' }} />
-                <col style={{ width: '20%' }} />
-                <col style={{ width: '16%' }} />
-                <col style={{ width: '12%' }} />
-              </colgroup>
-              <thead>
-                <tr className="data-table-head-row">
-                  <th className="data-th text-left">Loan ID</th>
-                  <th className="data-th text-left">Client / Borrower</th>
-                  <th className="data-th text-right">Principal</th>
-                  <th className="data-th text-left">Status</th>
-                  <th className="data-th text-right"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentLoans.slice(0, 5).map((loan: any) => (
-                  <tr key={loan.$id} className="data-table-row group">
-                    <td className="data-td">
-                      <span className="mono-pill">{loan.$id.slice(-8).toUpperCase()}</span>
-                    </td>
-                    <td className="data-td">
-                      <div className="flex items-center gap-3">
-                        <div className="client-avatar">
-                          {loan.clientName?.[0] || '?'}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="client-name">{loan.clientName || 'Unknown Client'}</span>
-                          <span className="client-email">{loan.clientEmail || 'No email provided'}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="data-td text-right">
-                      <span className="amount-text">{formatAmount(loan.principalAmount || 0)}</span>
-                    </td>
-                    <td className="data-td">
-                      <span className={cn('badge', {
-                        'badge-success': loan.status === 'Active',
-                        'badge-pending': loan.status === 'Pending',
-                        'badge-error': loan.status === 'Overdue' || loan.status === 'Denied' || loan.status === 'Defaulted',
-                        'badge-completed': loan.status === 'Completed',
-                      })}>
-                        {loan.status}
-                      </span>
-                    </td>
-                    <td className="data-td text-right">
-                      <Link
-                        href={`/loans/${loan.$id}`}
-                        className="btn-secondary row-action-btn"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {recentLoans.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="data-empty-cell">
-                      <div className="data-empty">
-                        <CreditCard className="size-8 text-gray-300" />
-                        <p className="text-14 text-gray-600 font-medium mt-2">No recent Loans</p>
-                        <p className="text-12 text-gray-400">Originated loans will appear here.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <RecentLoansTable recentLoans={recentLoans} />
       </div>
     </section>
   )

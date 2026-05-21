@@ -12,12 +12,12 @@ function mapPenaltyRow(row: any): Penalty {
     loanId: row.loan_id,
     clientId: row.client_id,
     amount: row.amount,
-    penaltyType: row.penalty_type,
+    penaltyType: row.payment_method, // reusing this field for penalty_type
     comment: row.comment,
     appliedBy: row.applied_by,
-    dateApplied: row.date_applied,
+    dateApplied: row.date,
     status: row.status,
-    reversedAt: row.reversed_at,
+    reversedAt: row.status === "Reversed" ? row.updated_at || row.created_at : "",
   };
 }
 
@@ -43,49 +43,83 @@ export const createPenalty = async ({
 
     const { data: loan, error: loanError } = await supabase
       .from("loans")
-      .select("status, total_payable")
+      .select("status")
       .eq("id", loanId)
       .single();
 
     if (loanError || !loan) throw new Error("Loan not found.");
-    if (loan.status !== "Active" && loan.status !== "Overdue") {
-      throw new Error("Penalties can only be applied to Active or Overdue loans.");
+    if (loan.status !== "Active" && loan.status !== "Substandard" && loan.status !== "Loss") {
+      throw new Error("Penalties can only be applied to Active, Substandard, or Loss loans.");
     }
     if (amount <= 0) throw new Error("Penalty amount must be greater than zero.");
 
-    // Create penalty record
+    // 1. Attach penalty to an installment
+    const { data: installments } = await supabase
+      .from("loan_installments")
+      .select("id, penalties_due")
+      .eq("loan_id", loanId)
+      .eq("is_settled", false)
+      .order("due_date", { ascending: true })
+      .limit(1);
+
+    const targetInstallment = installments && installments.length > 0 ? installments[0] : null;
+
+    if (targetInstallment) {
+      await supabase
+        .from("loan_installments")
+        .update({ penalties_due: targetInstallment.penalties_due + amount })
+        .eq("id", targetInstallment.id);
+    } else {
+      // Fallback to the latest installment
+      const { data: lastInst } = await supabase
+        .from("loan_installments")
+        .select("id, penalties_due")
+        .eq("loan_id", loanId)
+        .order("due_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastInst) {
+        await supabase
+          .from("loan_installments")
+          .update({ penalties_due: lastInst.penalties_due + amount })
+          .eq("id", lastInst.id);
+      }
+    }
+
+    // 2. Insert penalty record into loan_transactions
     const { data: penalty, error: penaltyError } = await supabase
-      .from("penalties")
+      .from("loan_transactions")
       .insert({
         loan_id: loanId,
         client_id: clientId,
         amount,
-        penalty_type: penaltyType,
+        type: "Manual Penalty",
+        payment_method: penaltyType, // Using this column to store the penalty type
         comment,
         applied_by: appliedBy,
-        date_applied: dateApplied,
+        date: dateApplied,
         status: "Active",
-        reversed_at: "",
       })
       .select()
       .single();
 
     if (penaltyError) throw penaltyError;
 
-    // Ledger self-healing
-    const [repaymentsRes, penaltiesRes] = await Promise.all([
-      supabase.from("repayments").select("amount").eq("loan_id", loanId),
-      supabase.from("penalties").select("amount").eq("loan_id", loanId).eq("status", "Active"),
-    ]);
+    // 3. Ledger self-healing
+    const { data: allInstallments } = await supabase
+      .from("loan_installments")
+      .select("penalties_due, penalties_paid")
+      .eq("loan_id", loanId);
 
-    const totalRepaid = (repaymentsRes.data ?? []).reduce((s, r) => s + r.amount, 0);
-    const totalPenalties = (penaltiesRes.data ?? []).reduce((s, p) => s + p.amount, 0);
-    const trueBalance = Math.round((loan.total_payable + totalPenalties - totalRepaid) * 100) / 100;
-    const truePenaltyAccrued = Math.round(totalPenalties * 100) / 100;
+    const remainingPenalties = (allInstallments ?? []).reduce(
+      (sum, inst) => sum + Math.max(0, inst.penalties_due - inst.penalties_paid),
+      0
+    );
 
     await supabase
       .from("loans")
-      .update({ balance: trueBalance, penalty_accrued: truePenaltyAccrued })
+      .update({ remaining_penalties: remainingPenalties })
       .eq("id", loanId);
 
     revalidatePath(`/loans/${loanId}`);
@@ -101,10 +135,11 @@ export const getPenaltiesByLoan = async (loanId: string) => {
     const supabase = createSupabaseAdminClient();
 
     const { data, error } = await supabase
-      .from("penalties")
+      .from("loan_transactions")
       .select("*")
       .eq("loan_id", loanId)
-      .order("date_applied", { ascending: false });
+      .eq("type", "Manual Penalty")
+      .order("date", { ascending: false });
 
     if (error) throw error;
 
@@ -125,46 +160,71 @@ export const reversePenalty = async (penaltyId: string, loanId: string) => {
     const supabase = createSupabaseAdminClient();
 
     const { data: penalty, error: fetchError } = await supabase
-      .from("penalties")
-      .select("status")
+      .from("loan_transactions")
+      .select("status, amount")
       .eq("id", penaltyId)
       .single();
 
     if (fetchError || !penalty) throw new Error("Penalty not found.");
     if (penalty.status === "Reversed") throw new Error("This penalty has already been reversed.");
 
+    // 1. Mark as Reversed
     const { data: reversed, error: reverseError } = await supabase
-      .from("penalties")
-      .update({ status: "Reversed", reversed_at: new Date().toISOString() })
+      .from("loan_transactions")
+      .update({ status: "Reversed" })
       .eq("id", penaltyId)
       .select()
       .single();
 
     if (reverseError) throw reverseError;
 
-    // Ledger self-healing
-    const { data: loan } = await supabase
-      .from("loans")
-      .select("total_payable")
-      .eq("id", loanId)
-      .single();
+    // 2. Remove penalty amount from an active installment
+    const { data: installments } = await supabase
+      .from("loan_installments")
+      .select("id, penalties_due")
+      .eq("loan_id", loanId)
+      .eq("is_settled", false)
+      .order("due_date", { ascending: true })
+      .limit(1);
 
-    const [repaymentsRes, penaltiesRes] = await Promise.all([
-      supabase.from("repayments").select("amount").eq("loan_id", loanId),
-      supabase.from("penalties").select("amount").eq("loan_id", loanId).eq("status", "Active"),
-    ]);
+    const targetInstallment = installments && installments.length > 0 ? installments[0] : null;
 
-    const totalRepaid = (repaymentsRes.data ?? []).reduce((s, r) => s + r.amount, 0);
-    const totalPenalties = (penaltiesRes.data ?? []).reduce((s, p) => s + p.amount, 0);
-    const restoredBalance = Math.round(((loan?.total_payable ?? 0) + totalPenalties - totalRepaid) * 100) / 100;
-    const restoredPenalty = Math.round(totalPenalties * 100) / 100;
+    if (targetInstallment) {
+      await supabase
+        .from("loan_installments")
+        .update({ penalties_due: Math.max(0, targetInstallment.penalties_due - penalty.amount) })
+        .eq("id", targetInstallment.id);
+    } else {
+      const { data: lastInst } = await supabase
+        .from("loan_installments")
+        .select("id, penalties_due")
+        .eq("loan_id", loanId)
+        .order("due_date", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastInst) {
+        await supabase
+          .from("loan_installments")
+          .update({ penalties_due: Math.max(0, lastInst.penalties_due - penalty.amount) })
+          .eq("id", lastInst.id);
+      }
+    }
+
+    // 3. Ledger self-healing
+    const { data: allInstallments } = await supabase
+      .from("loan_installments")
+      .select("penalties_due, penalties_paid")
+      .eq("loan_id", loanId);
+
+    const remainingPenalties = (allInstallments ?? []).reduce(
+      (sum, inst) => sum + Math.max(0, inst.penalties_due - inst.penalties_paid),
+      0
+    );
 
     await supabase
       .from("loans")
-      .update({
-        balance: Math.max(0, restoredBalance),
-        penalty_accrued: Math.max(0, restoredPenalty),
-      })
+      .update({ remaining_penalties: remainingPenalties })
       .eq("id", loanId);
 
     revalidatePath(`/loans/${loanId}`);

@@ -1,5 +1,6 @@
 import MobileNav from "@/components/MobileNav";
 import Sidebar from "@/components/Sidebar";
+import TabletNav from "@/components/TabletNav";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,6 +19,7 @@ export default async function RootLayout({
   return (
     <main className="flex h-screen w-full bg-background antialiased selection:bg-accent/20 selection:text-accent">
       <Sidebar user={loggedIn} />
+      <TabletNav user={loggedIn} />
       {/* Column: mobile header (fixed) + scrollable canvas */}
       <div className="flex size-full flex-col overflow-hidden relative">
         {/* Mobile Header — stays at top */}

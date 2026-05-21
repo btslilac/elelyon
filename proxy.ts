@@ -25,7 +25,6 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Helper to preserve cookies set by Supabase (e.g. refreshed tokens) during a redirect
   const redirectWithCookies = (url: URL | string) => {
     const response = NextResponse.redirect(url);
     supabaseResponse.cookies.getAll().forEach((cookie) => {
@@ -37,17 +36,12 @@ export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const code = searchParams.get('code');
 
-  // 0. Catch-all for prefixed auth callbacks (e.g. /forgot-password/auth/callback)
-  // This handles cases where the redirect URL was incorrectly prefixed.
   if (pathname !== '/auth/callback' && pathname.endsWith('/auth/callback')) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/callback';
     return redirectWithCookies(url);
   }
 
-  // 1. Global PKCE Code Exchange: If a 'code' is present in the URL, exchange it
-  // for a session immediately. This handles Magic Links or Invites that might
-  // land on the home page or other routes directly.
   if (code && pathname !== '/auth/callback') {
     await supabase.auth.exchangeCodeForSession(code);
     const url = request.nextUrl.clone();
@@ -55,16 +49,9 @@ export async function proxy(request: NextRequest) {
     return redirectWithCookies(url);
   }
 
-  // getUser() validates the token with Supabase Auth and refreshes it if expired.
-  // The middleware is the single serial point per request — it runs before any
-  // parallel server components/actions, so by the time they execute the refreshed
-  // tokens are already written to cookies. Server actions then use getUser()
-  // (which is memoized via React.cache()) so that we hit the Supabase Auth
-  // server only once per request.
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
 
   const isAuthRoute =
     pathname.startsWith("/sign-in") ||
@@ -83,47 +70,67 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages (except pending-approval)
   if (user && isAuthRoute && !pathname.startsWith("/pending-approval")) {
-    // Check user status before redirecting to dashboard
     try {
+      // Fetch both status and role to decide where they go right after login
       const { data: profile, error } = await supabase
         .from("users")
-        .select("user_status")
+        .select("user_status, role") // <-- Added 'role' here
         .eq("auth_id", user.id)
         .maybeSingle();
 
-      if (error) console.error("Middleware fetch user error:", error);
+      if (error) console.error("Proxy fetch user error:", error);
 
       if (profile?.user_status === "pending" || profile?.user_status === "rejected") {
-        // Pending/rejected users can stay on auth pages — they shouldn't reach the dashboard
         return supabaseResponse;
       }
-    } catch (err) {
-      console.error("Middleware unexpected error:", err);
-    }
 
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return redirectWithCookies(url);
+      // --- CHANGED FOR LOGGED-IN REDIRECTS ---
+      // If they just logged in, check if they are allowed on the default path
+      const url = request.nextUrl.clone();
+      if (profile?.role === "ADMIN" || profile?.role === "MANAGER") {
+        url.pathname = "/"; // Allowed to land on default path
+      } else {
+        url.pathname = "/loans"; // Regular staff land on loans page
+      }
+      return redirectWithCookies(url);
+
+    } catch (err) {
+      console.error("Proxy unexpected error:", err);
+    }
   }
 
-  // Block pending/rejected users from accessing protected routes
+  // Handle protected route requests for authenticated users
   if (user && !isAuthRoute) {
     try {
       const { data: profile, error } = await supabase
         .from("users")
-        .select("user_status")
+        .select("user_status, role") // <-- Added 'role' here
         .eq("auth_id", user.id)
         .maybeSingle();
 
-      if (error) console.error("Middleware fetch user error:", error);
+      if (error) console.error("Proxy fetch user error:", error);
 
+      // 1. Block pending/rejected users from protected routes
       if (profile?.user_status === "pending" || profile?.user_status === "rejected") {
         const url = request.nextUrl.clone();
         url.pathname = "/pending-approval";
         return redirectWithCookies(url);
       }
+
+      // --- CHANGED ---
+      // 2. Protect the default path "/" from non-admin/non-manager roles
+      if (pathname === "/") {
+        const isAuthorized = profile?.role === "ADMIN" || profile?.role === "MANAGER";
+        
+        if (!isAuthorized) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/loans"; // Bounce standard staff to the loans page
+          return redirectWithCookies(url);
+        }
+      }
+
     } catch (err) {
-      console.error("Middleware unexpected error:", err);
+      console.error("Proxy unexpected error:", err);
     }
   }
 

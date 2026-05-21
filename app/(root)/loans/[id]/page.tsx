@@ -1,5 +1,5 @@
 import { getLoanById, approveLoan, denyLoan } from "@/lib/actions/loan.actions";
-import { getRepaymentsByLoan } from "@/lib/actions/repayment.actions";
+import { getRepaymentsByLoan, getInstallmentsByLoan, getAllTransactionsByLoan } from "@/lib/actions/repayment.actions";
 import { getPenaltiesByLoan } from "@/lib/actions/penalty.actions";
 import { getAuditLogsByLoan } from "@/lib/actions/audit.actions";
 import { getClientById } from "@/lib/actions/client.actions";
@@ -42,16 +42,20 @@ export default async function LoanDetailPage({
     );
   }
 
-  const [client, repayments, penalties, auditLogs] = await Promise.all([
+  const [client, repayments, penalties, auditLogs, installments, transactions] = await Promise.all([
     getClientById(loan.clientId),
     getRepaymentsByLoan(id),
     getPenaltiesByLoan(id),
     getAuditLogsByLoan(id),
+    getInstallmentsByLoan(id),
+    getAllTransactionsByLoan(id),
   ]);
 
   const safeRepayments = repayments || [];
   const safePenalties = penalties || [];
   const safeAuditLogs = auditLogs || [];
+  const safeInstallments = installments || [];
+  const safeTransactions = transactions || [];
 
   const totalPaid = safeRepayments.reduce(
     (acc: number, rep: Repayment) => acc + (rep.amount || 0),
@@ -136,7 +140,7 @@ export default async function LoanDetailPage({
       }}
         className="loan-detail-layout">
 
-        {/* Left: interactive client component (KPI strip + tables + audit) */}
+        {/* Left: interactive client component (KPI strip + tabs + audit) */}
         <div style={{ minWidth: 0 }}>
           <LoanDetailClient
             loan={loan}
@@ -147,6 +151,8 @@ export default async function LoanDetailPage({
             currentUser={currentUser}
             totalPaid={totalPaid}
             progressPercent={progressPercent}
+            installments={safeInstallments}
+            transactions={safeTransactions}
           />
         </div>
 
@@ -179,6 +185,8 @@ export default async function LoanDetailPage({
             currentUser={currentUser}
             repayments={safeRepayments}
             penalties={safePenalties}
+            installments={safeInstallments}
+            transactions={safeTransactions}
           />
         </div>
       </div>
