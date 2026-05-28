@@ -8,6 +8,7 @@ import PdfExportButton from "@/components/reports/PdfExportButton";
 import { ClipboardList } from "lucide-react";
 import Link from "next/link";
 import CompanyHeader from "@/components/reports/CompanyHeader";
+import { Suspense } from "react";
 
 const ACTION_STYLES: Record<string, string> = {
   REPAYMENT_CREATED: "bg-green-50 text-green-700",
@@ -58,7 +59,9 @@ export default async function AuditLogReportPage({
         />
       </div>
       <div className="card-premium mb-6 print:hidden">
-        <DateRangeFilter label="Filter by Date" />
+        <Suspense fallback={<div className="h-9 w-64 bg-gray-100 rounded-md animate-pulse" />}>
+          <DateRangeFilter label="Filter by Date" />
+        </Suspense>
       </div>
       {!report ? (
         <p className="text-gray-500">Failed to load audit log.</p>

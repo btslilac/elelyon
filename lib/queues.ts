@@ -20,6 +20,12 @@ export const notificationQueue = new Queue('notification-queue', {
   },
 });
 
+// Attach error handlers to prevent unhandled 'error' event stack traces in the console.
+// The main Redis connection warning in redis.ts handles reporting the connection status.
+notificationQueue.on('error', (err) => {
+  // Gracefully caught to prevent process crash/unhandled stack logs
+});
+
 /**
  * reminderQueue
  * Handles bulk reminder processing scans
@@ -30,6 +36,10 @@ export const reminderQueue = new Queue('reminder-queue', {
     attempts: 3,
     removeOnComplete: true,
   },
+});
+
+reminderQueue.on('error', (err) => {
+  // Gracefully caught to prevent process crash/unhandled stack logs
 });
 
 console.log('[BullMQ] Queues initialized: notification-queue, reminder-queue');

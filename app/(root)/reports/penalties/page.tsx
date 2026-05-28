@@ -10,6 +10,7 @@ import PdfExportButton from "@/components/reports/PdfExportButton";
 import { ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
 import Link from "next/link";
 import CompanyHeader from "@/components/reports/CompanyHeader";
+import { Suspense } from "react";
 
 export default async function PenaltiesReportPage({
   searchParams,
@@ -44,7 +45,9 @@ export default async function PenaltiesReportPage({
       </div>
 
       <div className="card-premium mb-6 print:hidden">
-        <DateRangeFilter label="Filter Period" />
+        <Suspense fallback={<div className="h-9 w-64 bg-gray-100 rounded-md animate-pulse" />}>
+          <DateRangeFilter label="Filter Period" />
+        </Suspense>
       </div>
 
       {!report ? (

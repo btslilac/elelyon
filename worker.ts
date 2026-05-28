@@ -88,6 +88,10 @@ notificationWorker.on('failed', (job, err) => {
   console.error(`[Worker] Job ${job?.id} failed with error:`, err.message);
 });
 
+notificationWorker.on('error', (err) => {
+  // Gracefully caught to prevent process crash/unhandled stack logs
+});
+
 /**
  * 2. Automated Scheduler (Cron)
  * Runs daily at 8:00 AM EAT (Africa/Nairobi)

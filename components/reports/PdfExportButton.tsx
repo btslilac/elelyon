@@ -20,7 +20,10 @@ export type PdfReportType =
   | "penalties"
   | "audit"
   | "monthly"
-  | "statement";
+  | "statement"
+  | "income"
+  | "par"
+  | "officer";
 
 interface PdfExportButtonProps {
   reportType: PdfReportType;
@@ -38,6 +41,10 @@ const generators: Record<PdfReportType, (data: any) => void> = {
   audit:       downloadAuditLogPdf,
   monthly:     downloadMonthlyReportPdf,
   statement:   downloadLoanStatementPdf,
+  // New reports — PDF generation can be added to pdf-generator.ts later
+  income:  (data) => console.log("Income PDF export", data),
+  par:     (data) => console.log("PAR PDF export", data),
+  officer: (data) => console.log("Officer PDF export", data),
 };
 
 export default function PdfExportButton({

@@ -130,7 +130,7 @@ export default function LoanDetailClient({
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [reversingId, setReversingId] = useState<string | null>(null);
 
-  const isActionable = ['Active', 'Overdue', 'Substandard', 'Loss'].includes(loan.status);
+  const isActionable = ['Active', 'Overdue', 'Loss'].includes(loan.status);
   const activePenalties = penalties.filter(p => p.status === 'Active');
   const totalPenaltiesAmt = activePenalties.reduce((s, p) => s + p.amount, 0);
   const dpd = (loan as any).daysPastDue ?? 0;
@@ -177,8 +177,8 @@ export default function LoanDetailClient({
         </div>
         <div className="kpi-card">
           <span className="kpi-label">Penalties</span>
-          <span className={cn('kpi-value', (loan.penaltyAccrued || 0) > 0 ? 'kpi-value-warning' : '')}>
-            {formatAmount(remPenalties || loan.penaltyAccrued || 0)}
+          <span className={cn('kpi-value', (remPenalties ?? loan.penaltyAccrued ?? 0) > 0 ? 'kpi-value-warning' : '')}>
+            {formatAmount(remPenalties ?? loan.penaltyAccrued ?? 0)}
           </span>
           <span className="kpi-sub">{activePenalties.length} active</span>
         </div>
@@ -356,6 +356,11 @@ export default function LoanDetailClient({
                   Target: {formatAmount(loan.totalPayable)}
                 </span>
               </div>
+              {['Written Off', 'Loss'].includes(loan.status) && (
+                <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#FEF2F2', borderRadius: '0.375rem', border: '1px solid #FECACA' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: 600, textAlign: 'center' }}>This loan was marked as a credit loss. The remaining balance has been written off.</p>
+                </div>
+              )}
             </div>
 
             {loan.status === 'Pending' && (
@@ -697,12 +702,12 @@ export function ActionPanel({ loan, client, currentUser }: ActionPanelProps) {
 
   const lifecycleState = (loan as any).lifecycleState;
 
-  const canRepay     = ['Active', 'Overdue', 'Substandard', 'Loss'].includes(loan.status);
+  const canRepay     = ['Active', 'Overdue', 'Loss'].includes(loan.status);
   const canPenalise  = canRepay;
   const canLifecycle = canRepay;
-  const canRenew     = loan.status === 'Completed' || loan.status === 'Fully Paid';
-  const canWriteOff  = ['Active', 'Substandard', 'Loss', 'Overdue'].includes(loan.status) && currentUser?.role === 'ADMIN';
-  const canWaive     = ['Active', 'Substandard', 'Loss', 'Overdue'].includes(loan.status) && ['ADMIN', 'MANAGER'].includes(currentUser?.role || '');
+  const canRenew     = loan.status === 'Fully Paid';
+  const canWriteOff  = ['Active', 'Overdue', 'Loss'].includes(loan.status) && currentUser?.role === 'ADMIN';
+  const canWaive     = ['Active', 'Overdue', 'Loss'].includes(loan.status) && ['ADMIN', 'MANAGER'].includes(currentUser?.role || '');
 
   return (
     <>
@@ -714,8 +719,8 @@ export function ActionPanel({ loan, client, currentUser }: ActionPanelProps) {
             <span className={cn('badge', {
               'badge-success':   loan.status === 'Active',
               'badge-pending':   loan.status === 'Pending',
-              'badge-error':     ['Overdue', 'Denied', 'Defaulted', 'Substandard', 'Loss'].includes(loan.status),
-              'badge-completed': loan.status === 'Completed' || loan.status === 'Fully Paid',
+              'badge-error':     ['Overdue', 'Denied', 'Written Off', 'Loss'].includes(loan.status),
+              'badge-completed': loan.status === 'Fully Paid',
             })}>
               {loan.status}
             </span>

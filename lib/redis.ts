@@ -13,12 +13,23 @@ const redisConnection = new Redis(REDIS_URL, {
   },
 });
 
-redisConnection.on('error', (err) => {
-  console.error('[Redis] Connection Error:', err);
+let lastErrorTime = 0;
+
+redisConnection.on('error', (err: any) => {
+  const now = Date.now();
+  // Rate-limit connection refused warnings to once every 10 seconds to prevent console spam
+  if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
+    if (now - lastErrorTime > 10000) {
+      console.warn(`[Redis] ⚠️ Connection refused at ${REDIS_URL}. Please ensure Redis is running.`);
+      lastErrorTime = now;
+    }
+  } else {
+    console.error('[Redis] Connection Error:', err);
+  }
 });
 
 redisConnection.on('connect', () => {
-  console.log('[Redis] Connected to:', REDIS_URL);
+  console.log('[Redis] ✅ Connected to:', REDIS_URL);
 });
 
 export { redisConnection };

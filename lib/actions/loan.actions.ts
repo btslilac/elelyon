@@ -23,13 +23,13 @@ function mapLoanRow(row: any): Loan {
     totalPayable: row.total_payable,
     balance: row.balance,
     status: row.status,
-    penaltyAccrued: row.penalty_accrued ?? 0,
+    penaltyAccrued: row.remaining_penalties ?? 0,
     loanType: row.loan_type,
     securities: row.securities,
     guarantorName: row.guarantor_name,
     guarantorPhone: row.guarantor_phone,
     guarantorId: row.guarantor_id,
-    installmentAmount: row.installment_amount,
+    installmentAmount: (row.total_payable || 0) / (row.duration_in_months || 1),
     documentUrl: row.document_url,
     createdBy: row.created_by,
     isHighRisk: row.is_high_risk ?? false,
@@ -505,6 +505,139 @@ export const getLoanMetrics = async () => {
   } catch (error) {
     console.error("Error fetching metrics", error);
     return { totalDisbursed: 0, totalOutstanding: 0, loanCount: 0 };
+  }
+};
+
+export const getDashboardMetrics = async () => {
+  try {
+    const supabase = createSupabaseAdminClient();
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const thisMonthStart = new Date();
+    thisMonthStart.setDate(1);
+    thisMonthStart.setHours(0, 0, 0, 0);
+
+    const [loansRes, clientsRes, txTodayRes, txMonthRes, penaltiesRes] = await Promise.all([
+      supabase
+        .from("loans")
+        .select("status, lifecycle_state, principal_amount, balance, days_past_due, remaining_penalties, is_high_risk, created_at"),
+      supabase
+        .from("clients")
+        .select("id", { count: "exact", head: true }),
+      // Today's repayments
+      supabase
+        .from("loan_transactions")
+        .select("amount")
+        .eq("type", "Repayment")
+        .neq("status", "Reversed")
+        .gte("date", todayStart.toISOString()),
+      // This month's repayments
+      supabase
+        .from("loan_transactions")
+        .select("amount")
+        .eq("type", "Repayment")
+        .neq("status", "Reversed")
+        .gte("date", thisMonthStart.toISOString()),
+      // Outstanding manual penalties
+      supabase
+        .from("loan_transactions")
+        .select("amount")
+        .eq("type", "Manual Penalty")
+        .eq("status", "Active"),
+    ]);
+
+    const loans = loansRes.data ?? [];
+    const totalClients = clientsRes.count ?? 0;
+    const collectionsToday = (txTodayRes.data ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
+    const collectionsThisMonth = (txMonthRes.data ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
+    const totalPenaltiesOutstanding = (penaltiesRes.data ?? []).reduce((s, t) => s + (t.amount ?? 0), 0);
+
+    // Status counts
+    let activeLoans = 0, overdueLoans = 0, fullyPaidLoans = 0;
+    let writtenOffLoans = 0, lossLoans = 0, pendingLoans = 0, deniedLoans = 0;
+    let highRiskLoans = 0;
+
+    // Financial totals
+    let totalDisbursed = 0, totalOutstanding = 0, totalPayable = 0;
+    let par30Balance = 0, activePortfolioBalance = 0;
+    let newLoansThisMonth = 0;
+
+    const DISBURSED = ["Active", "Overdue", "Fully Paid", "Written Off", "Loss"];
+
+    for (const loan of loans) {
+      if (loan.is_high_risk) highRiskLoans++;
+
+      switch (loan.status) {
+        case "Active":      activeLoans++;     break;
+        case "Overdue":     overdueLoans++;    break;
+        case "Fully Paid":  fullyPaidLoans++;  break;
+        case "Written Off": writtenOffLoans++; break;
+        case "Loss":        lossLoans++;       break;
+        case "Pending":     pendingLoans++;    break;
+        case "Denied":      deniedLoans++;     break;
+      }
+
+      if (DISBURSED.includes(loan.status)) {
+        totalDisbursed += loan.principal_amount ?? 0;
+        totalPayable   += loan.principal_amount ?? 0; // used for collection rate denominator
+      }
+
+      if (loan.status === "Active" || loan.status === "Overdue") {
+        const bal = loan.balance ?? 0;
+        totalOutstanding += bal;
+        activePortfolioBalance += bal;
+        if ((loan.days_past_due ?? 0) >= 30) par30Balance += bal;
+      }
+
+      const loanDate = new Date(loan.created_at);
+      if (loanDate >= thisMonthStart) newLoansThisMonth++;
+    }
+
+    const par30Rate = activePortfolioBalance > 0
+      ? Math.round((par30Balance / activePortfolioBalance) * 10000) / 100
+      : 0;
+
+    const collectionRate = totalPayable > 0
+      ? Math.round((collectionsThisMonth / totalPayable) * 10000) / 100
+      : 0;
+
+    return {
+      // Loan counts
+      totalLoans: loans.length,
+      activeLoans,
+      overdueLoans,
+      fullyPaidLoans,
+      writtenOffLoans,
+      lossLoans,
+      pendingLoans,
+      deniedLoans,
+      highRiskLoans,
+      newLoansThisMonth,
+      // Clients
+      totalClients,
+      // Financials
+      totalDisbursed,
+      totalOutstanding,
+      totalPenaltiesOutstanding,
+      // Collections
+      collectionsToday,
+      collectionsThisMonth,
+      collectionRate,
+      // Risk
+      par30Rate,
+      par30Balance,
+    };
+  } catch (error) {
+    console.error("[getDashboardMetrics]", error);
+    return {
+      totalLoans: 0, activeLoans: 0, overdueLoans: 0, fullyPaidLoans: 0,
+      writtenOffLoans: 0, lossLoans: 0, pendingLoans: 0, deniedLoans: 0,
+      highRiskLoans: 0, newLoansThisMonth: 0, totalClients: 0,
+      totalDisbursed: 0, totalOutstanding: 0, totalPenaltiesOutstanding: 0,
+      collectionsToday: 0, collectionsThisMonth: 0, collectionRate: 0,
+      par30Rate: 0, par30Balance: 0,
+    };
   }
 };
 

@@ -163,12 +163,12 @@ export async function generateMonthlySnapshot(
   const { data: loans, error: lErr } = await supabase
     .from("loans")
     .select(
-      "id, client_id, loan_type, principal_amount, balance, total_payable, " +
-      "start_date, due_date, status, installment_amount, penalty_accrued, closed_at"
+      "id, client_id, loan_type, principal_amount, balance, total_payable, duration_in_months, " +
+      "start_date, due_date, status, remaining_penalties, updated_at"
     )
     .lte("start_date", periodEnd)
     .not("status", "in", '("Pending","Denied")')
-    .or(`closed_at.is.null,closed_at.gte.${periodStart}`);
+    .or(`status.neq.Fully Paid,updated_at.gte.${periodStart}`);
 
   if (lErr) throw lErr;
   const periodLoans = (loans ?? []) as any[];
@@ -179,18 +179,21 @@ export async function generateMonthlySnapshot(
   const [repRes, penRes] = loanIds.length > 0
     ? await Promise.all([
       supabase
-        .from("repayments")
+        .from("loan_transactions")
         .select("loan_id, amount")
         .in("loan_id", loanIds)
+        .eq("type", "Repayment")
+        .neq("status", "Reversed")
         .gte("date", periodStart)
         .lte("date", periodEnd),
       supabase
-        .from("penalties")
+        .from("loan_transactions")
         .select("loan_id, amount")
         .in("loan_id", loanIds)
-        .gte("date_applied", periodStart)
-        .lte("date_applied", periodEnd)
-        .eq("status", "Active"),
+        .eq("type", "Manual Penalty")
+        .eq("status", "Active")
+        .gte("date", periodStart)
+        .lte("date", periodEnd),
     ])
     : [{ data: [] }, { data: [] }];
 
@@ -274,6 +277,7 @@ export async function generateMonthlySnapshot(
       0,
       openingBalance + newLoanAmount + penaltiesThisMonth - amountPaid
     );
+    const installmentAmount = (loan.total_payable || 0) / (loan.duration_in_months || 1);
 
     entries.push({
       loanId: loan.id,
@@ -289,18 +293,18 @@ export async function generateMonthlySnapshot(
       closingBalance,
       loanStatus: loan.status,
       daysPastDue,
-      installmentAmount: loan.installment_amount ?? 0,
+      installmentAmount,
     });
 
     // Aggregates
     if (isNewThisPeriod) { totalNewLoans++; totalNewDisbursed += loan.principal_amount ?? 0; }
-    if (loan.status === "Completed" && loan.closed_at && loan.closed_at >= periodStart) totalClosedLoans++;
+    if (loan.status === "Fully Paid" && loan.updated_at && loan.updated_at >= periodStart) totalClosedLoans++;
     if (loan.status === "Active") totalActiveLoans++;
     if (loan.status === "Overdue") totalOverdueLoans++;
-    if (loan.status === "Defaulted") totalDefaultedLoans++;
+    if (loan.status === "Written Off" || loan.status === "Loss") totalDefaultedLoans++;
     totalRepaid += amountPaid;
     totalPenalties += penaltiesThisMonth;
-    totalExpected += loan.installment_amount ?? 0;
+    totalExpected += installmentAmount;
     closingPortfolioBalance += closingBalance;
   }
 

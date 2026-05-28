@@ -10,7 +10,7 @@ export default async function LoansPage() {
   const activeLoans = loans.filter((l: any) => l.status === 'Active').length;
   const pendingLoans = loans.filter((l: any) => l.status === 'Pending').length;
   const overdueLoans = loans.filter((l: any) => l.status === 'Overdue').length;
-  const completedLoans = loans.filter((l: any) => l.status === 'Completed').length;
+  const fullyPaidLoans = loans.filter((l: any) => l.status === 'Fully Paid').length;
 
   return (
     <section className="home-content">
@@ -81,13 +81,13 @@ export default async function LoansPage() {
         <div className="card-premium flex flex-col justify-between group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10" style={{ background: '#E0F2FE' }}></div>
           <div className="flex justify-between items-start mb-6">
-            <p className="text-12 font-bold text-gray-500 uppercase tracking-widest">Completed</p>
+            <p className="text-12 font-bold text-gray-500 uppercase tracking-widest">Fully Paid</p>
             <div className="p-2 rounded-lg ring-1" style={{ background: '#E0F2FE', color: '#0369A1', borderColor: '#BAE6FD' }}>
               <CheckCircle2 className="size-4" />
             </div>
           </div>
           <div>
-            <h2 className="text-36 font-bold text-gray-900 tabular-nums">{completedLoans}</h2>
+            <h2 className="text-36 font-bold text-gray-900 tabular-nums">{fullyPaidLoans}</h2>
             <div className="mt-3 flex items-center gap-2">
               <span className="badge badge-completed">Settled</span>
               <p className="text-12 text-gray-500 font-medium">Fully repaid</p>

@@ -10,6 +10,7 @@ import PdfExportButton from "@/components/reports/PdfExportButton";
 import { TrendingUp, TrendingDown, Percent } from "lucide-react";
 import Link from "next/link";
 import CompanyHeader from "@/components/reports/CompanyHeader";
+import { Suspense } from "react";
 
 export default async function CollectionsReportPage({
   searchParams,
@@ -45,7 +46,9 @@ export default async function CollectionsReportPage({
 
       {/* Filter bar */}
       <div className="card-premium mb-6 print:hidden">
-        <DateRangeFilter label="Filter Period" />
+        <Suspense fallback={<div className="h-9 w-64 bg-gray-100 rounded-md animate-pulse" />}>
+          <DateRangeFilter label="Filter Period" />
+        </Suspense>
       </div>
 
       {!report ? (
@@ -132,13 +135,13 @@ export default async function CollectionsReportPage({
                         <td className="data-td text-right tabular-nums font-semibold text-red-600">{formatAmount(row.balance)}</td>
                         <td className="data-td">
                           <span className={cn("badge", {
-                            "badge-success": row.status === "Active",
-                            "badge-error": row.status === "Overdue" || row.status === "Defaulted",
-                            "badge-completed": row.status === "Completed",
-                            "badge-pending": row.status === "Pending",
-                          })}>
-                            {row.status}
-                          </span>
+                              "badge-success":   row.status === "Active",
+                              "badge-error":     row.status === "Overdue" || row.status === "Written Off" || row.status === "Loss",
+                              "badge-completed": row.status === "Fully Paid",
+                              "badge-pending":   row.status === "Pending",
+                            })}>
+                              {row.status}
+                            </span>
                         </td>
                       </tr>
                     ))}

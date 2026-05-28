@@ -30,6 +30,7 @@ interface Client {
   totalBorrowed: number;
   outstandingBalance: number;
   profilePhotoUrl?: string;
+  hasOverdueLoans?: boolean;
 }
 
 export default function ClientsTable({ clients }: { clients: Client[] }) {
@@ -45,7 +46,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
     if (activeTab === 'active') {
       result = clients.filter(c => (c.totalBorrowed || 0) > 0 && (c.outstandingBalance || 0) > 0);
     } else if (activeTab === 'arrears') {
-      result = clients.filter(c => (c.outstandingBalance || 0) > 0);
+      result = clients.filter(c => c.hasOverdueLoans);
     }
 
     // Search query filtering
@@ -162,7 +163,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
             </TableHeader>
             <TableBody>
               {filtered.map((client) => {
-                const isArrears = (client.outstandingBalance || 0) > 0;
+                const isArrears = client.hasOverdueLoans;
                 const whatsappUrl = `https://wa.me/${client.phone.replace(/\D/g, '')}`;
 
                 return (
@@ -258,7 +259,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
       >
         {filtered.map((client) => {
           const isOpen = expandedId === client.$id;
-          const isArrears = (client.outstandingBalance || 0) > 0;
+          const isArrears = client.hasOverdueLoans;
 
           return (
             <TableResponsiveCard
@@ -288,7 +289,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
                   gap-4
                 "
               >
-                <div className="flex items-center gap-4 min-w-0 translate-x-4">
+                <div className="flex items-center gap-4 min-w-0">
                   {/* Avatar */}
                   <div className="shrink-0">
                     <ClientAvatar
@@ -344,7 +345,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
                     "
                   >
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-500 translate-x-4">
+                      <span className="text-sm text-slate-500">
                         National ID
                       </span>
                       <span
@@ -358,7 +359,6 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
                           font-mono
                           border
                           text-slate-700
-                          -translate-x-6
                         "
                       >
                         {client.nationalId}
@@ -366,28 +366,28 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-500 translate-x-4">
+                      <span className="text-sm text-slate-500">
                         Phone
                       </span>
-                      <span className="text-sm font-medium text-slate-700 -translate-x-4">
+                      <span className="text-sm font-medium text-slate-700">
                         {client.phone}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-500 translate-x-4">
+                      <span className="text-sm text-slate-500">
                         Total Disbursed
                       </span>
-                      <span className="font-semibold text-slate-900 -translate-x-4">
+                      <span className="font-semibold text-slate-900">
                         {formatAmount(client.totalBorrowed || 0)}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-500 translate-x-4">
+                      <span className="text-sm text-slate-500">
                         Outstanding Balance
                       </span>
-                      <span className={cn("font-semibold", isArrears ? "text-red-600" : "text-slate-900", "-translate-x-4")}>
+                      <span className={cn("font-semibold", isArrears ? "text-red-600" : "text-slate-900")}>
                         {formatAmount(client.outstandingBalance || 0)}
                       </span>
                     </div>
@@ -504,7 +504,7 @@ export default function ClientsTable({ clients }: { clients: Client[] }) {
               w-full
             "
           >
-            <UsersRound className="size-6 mx-auto mb-3 text-slate-300 translate-4" />
+            <UsersRound className="size-6 mx-auto mb-3 text-slate-300" />
 
             <h3 className="font-semibold text-slate-700">
               {query ? "No clients match your search" : "No Clients Found"}

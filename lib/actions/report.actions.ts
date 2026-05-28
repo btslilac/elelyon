@@ -9,6 +9,9 @@ import {
   getPenaltySummary,
   getAuditLogReport,
   getLoanStatementData,
+  getIncomeStatement,
+  getPARReport,
+  getLoanOfficerReport,
 } from "../reports/report.queries";
 import {
   generateMonthlySnapshot,
@@ -96,7 +99,40 @@ export async function getAuditLogReportAction(filters: ReportFilters = {}) {
   }
 }
 
-// ─── Loan statement (no admin gate — any authenticated user for their loan) ───
+export async function getIncomeStatementAction(filters: ReportFilters = {}) {
+  await requireAdmin();
+  try {
+    const data = await getIncomeStatement(filters);
+    return parseStringify(data);
+  } catch (error) {
+    console.error("[getIncomeStatementAction]", error);
+    return null;
+  }
+}
+
+export async function getPARReportAction() {
+  await requireAdmin();
+  try {
+    const data = await getPARReport();
+    return parseStringify(data);
+  } catch (error) {
+    console.error("[getPARReportAction]", error);
+    return null;
+  }
+}
+
+export async function getLoanOfficerReportAction() {
+  await requireAdmin();
+  try {
+    const data = await getLoanOfficerReport();
+    return parseStringify(data);
+  } catch (error) {
+    console.error("[getLoanOfficerReportAction]", error);
+    return null;
+  }
+}
+
+// ─── Loan statement (any authenticated user for their own loan) ───────────────
 
 export async function getLoanStatementAction(loanId: string) {
   const user = await getLoggedInUser();

@@ -266,9 +266,9 @@ export default async function StatementPage({
             <div className="statement-field">
               <span className="statement-field-label">Loan Status</span>
               <span className={cn("statement-field-value", {
-                "kpi-value-success": loan.status === "Active" || loan.status === "Completed",
+                "kpi-value-success": loan.status === "Active" || loan.status === "Fully Paid",
                 "kpi-value-warning": loan.status === "Pending",
-                "kpi-value-danger": loan.status === "Overdue" || loan.status === "Denied",
+                "kpi-value-danger":  loan.status === "Overdue" || loan.status === "Denied" || loan.status === "Written Off" || loan.status === "Loss",
               })}>
                 {loan.status}
               </span>

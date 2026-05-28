@@ -87,7 +87,7 @@ export default async function LoanDetailPage({
           <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>⚠️</span>
           <div>
             <p style={{ fontWeight: 700, fontSize: '0.875rem', color: '#92400E' }}>High-Risk Client — Pending Admin Approval</p>
-            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#78350F', lineHeight: 1.5 }}>This borrower has an existing Overdue or Defaulted loan. This facility has been flagged and must be reviewed and approved by an admin before disbursement.</p>
+            <p style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: '#78350F', lineHeight: 1.5 }}>This borrower has an existing Overdue, Written Off, or Loss loan. This facility has been flagged and must be reviewed and approved by an admin before disbursement.</p>
           </div>
         </div>
       )}
@@ -100,10 +100,10 @@ export default async function LoanDetailPage({
             <div style={{ display: "flex", alignItems: "center", gap: "0.625rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
               <span
                 className={cn("badge", {
-                  "badge-success": loan.status === "Active",
-                  "badge-pending": loan.status === "Pending",
-                  "badge-error": loan.status === "Overdue" || loan.status === "Denied" || loan.status === "Defaulted",
-                  "badge-completed": loan.status === "Completed",
+                  "badge-success":   loan.status === "Active",
+                  "badge-pending":   loan.status === "Pending",
+                  "badge-error":     loan.status === "Overdue" || loan.status === "Denied" || loan.status === "Written Off" || loan.status === "Loss",
+                  "badge-completed": loan.status === "Fully Paid",
                 })}
               >
                 {loan.status}

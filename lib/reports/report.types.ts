@@ -1,6 +1,7 @@
 /**
  * Elelyon LMS — Reporting Type Definitions
  * All types shared by the report query layer, server actions, and UI components.
+ * Aligned to the actual production DB schema (loan_transactions replaces repayments/penalties).
  */
 
 // ─── Filters ────────────────────────────────────────────────────────────────
@@ -24,23 +25,51 @@ export interface MonthlyReportFilters {
   month: number; // 1–12
 }
 
+// ─── Loan status constants (actual DB values) ────────────────────────────────
+
+export const LOAN_STATUSES = {
+  PENDING: "Pending",
+  ACTIVE: "Active",
+  OVERDUE: "Overdue",
+  FULLY_PAID: "Fully Paid",
+  WRITTEN_OFF: "Written Off",
+  LOSS: "Loss",
+  DENIED: "Denied",
+} as const;
+
+export type LoanStatus = typeof LOAN_STATUSES[keyof typeof LOAN_STATUSES];
+export type LifecycleState = "Standard" | "Rollover" | "Restructured";
+
 // ─── Portfolio Summary ───────────────────────────────────────────────────────
 
 export interface PortfolioSummary {
+  // Counts by status
   totalLoans: number;
   pendingLoans: number;
   activeLoans: number;
   overdueLoans: number;
-  completedLoans: number;
-  defaultedLoans: number;
+  fullyPaidLoans: number;
+  writtenOffLoans: number;
+  lossLoans: number;
   deniedLoans: number;
   highRiskLoans: number;
 
+  // Lifecycle counts
+  standardLoans: number;
+  rolloverLoans: number;
+  restructuredLoans: number;
+
+  // Financial totals
   totalDisbursed: number;       // sum of principal_amount (non-pending/denied)
   totalOutstanding: number;     // sum of balance (active + overdue)
-  totalInterestEarned: number;  // sum of (total_payable - principal_amount) for closed loans
-  totalPenaltiesCharged: number;
+  totalInterestEarned: number;  // sum of total_interest for disbursed loans
+  totalPenaltiesOutstanding: number; // sum of remaining_penalties
   collectionRate: number;       // percentage
+
+  // PAR (Portfolio At Risk) — % of active portfolio with days_past_due > 0
+  par30: number; // % of portfolio with DPD >= 30
+  par60: number;
+  par90: number;
 }
 
 // ─── Collection Report ───────────────────────────────────────────────────────
@@ -49,6 +78,7 @@ export interface CollectionReportRow {
   loanId: string;
   clientName: string;
   loanType: string;
+  lifecycleState: string;
   principalAmount: number;
   installmentAmount: number;
   totalRepaid: number;
@@ -75,6 +105,7 @@ export interface ArrearsRow {
   clientName: string;
   clientPhone: string;
   loanType: string;
+  lifecycleState: string;
   principalAmount: number;
   balance: number;
   dueDate: string;
@@ -110,7 +141,7 @@ export interface CashFlowReport {
   netCashFlow: number;
 }
 
-// ─── Penalty Report ──────────────────────────────────────────────────────────
+// ─── Penalty / Transaction Report ────────────────────────────────────────────
 
 export interface PenaltySummary {
   totalCharged: number;
@@ -125,12 +156,88 @@ export interface PenaltyReportRow {
   penaltyId: string;
   loanId: string;
   clientName: string;
-  penaltyType: string;
+  penaltyType: string;   // transaction type e.g. "Manual Penalty"
   amount: number;
-  status: string;
+  status: string;        // Active | Reversed
   dateApplied: string;
   appliedBy: string;
   comment?: string;
+}
+
+// ─── Income Statement ────────────────────────────────────────────────────────
+
+export interface IncomeStatementReport {
+  period: string;
+  // Revenue
+  interestCollected: number;     // allocated_current_interest + allocated_overdue_interest from Repayments
+  penaltyRevenue: number;        // Manual Penalty transactions (Active)
+  totalRevenue: number;
+  // Waivers (expense/write-down)
+  waiverAmount: number;          // Waiver transactions
+  netIncome: number;
+  // Monthly breakdown
+  months: IncomeMonth[];
+}
+
+export interface IncomeMonth {
+  label: string;
+  year: number;
+  month: number;
+  interest: number;
+  penalties: number;
+  waivers: number;
+  net: number;
+}
+
+// ─── PAR (Portfolio At Risk) ─────────────────────────────────────────────────
+
+export interface PARReport {
+  totalPortfolioBalance: number;
+  par1Balance: number;    // DPD >= 1
+  par30Balance: number;   // DPD >= 30
+  par60Balance: number;   // DPD >= 60
+  par90Balance: number;   // DPD >= 90
+  par1Rate: number;       // percentage of total portfolio
+  par30Rate: number;
+  par60Rate: number;
+  par90Rate: number;
+  writtenOffBalance: number;
+  lossBalance: number;
+  rows: PARRow[];
+}
+
+export interface PARRow {
+  loanId: string;
+  clientName: string;
+  clientPhone: string;
+  loanType: string;
+  lifecycleState: string;
+  principalAmount: number;
+  balance: number;
+  daysPastDue: number;
+  status: string;
+  riskBucket: string;
+}
+
+// ─── Loan Officer Performance ────────────────────────────────────────────────
+
+export interface LoanOfficerReport {
+  officers: OfficerRow[];
+  totalLoans: number;
+  totalDisbursed: number;
+}
+
+export interface OfficerRow {
+  officerName: string;
+  totalOriginated: number;
+  totalDisbursed: number;
+  activeCount: number;
+  overdueCount: number;
+  fullyPaidCount: number;
+  writtenOffCount: number;
+  lossCount: number;
+  totalCollected: number;
+  collectionRate: number;
 }
 
 // ─── Audit Log Report ────────────────────────────────────────────────────────
@@ -227,6 +334,7 @@ export interface LoanStatementData {
     clientEmail: string;
     nationalId: string;
     loanType: string;
+    lifecycleState: string;
     principalAmount: number;
     interestRate: number;
     interestType: string;
@@ -239,6 +347,7 @@ export interface LoanStatementData {
     balance: number;
     penaltyAccrued: number;
     installmentAmount: number;
+    daysPastDue: number;
     securities?: string;
     guarantorName?: string;
   };

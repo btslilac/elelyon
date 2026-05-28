@@ -69,10 +69,10 @@ export default function RecentLoansTable({ recentLoans }: RecentLoansTableProps)
                   </TableCell>
                   <TableCell className="data-td">
                     <span className={cn('badge', {
-                      'badge-success': loan.status === 'Active',
-                      'badge-pending': loan.status === 'Pending',
-                      'badge-error': loan.status === 'Overdue' || loan.status === 'Denied' || loan.status === 'Defaulted',
-                      'badge-completed': loan.status === 'Completed',
+                      'badge-success':   loan.status === 'Active',
+                      'badge-pending':   loan.status === 'Pending',
+                      'badge-error':     loan.status === 'Overdue' || loan.status === 'Denied' || loan.status === 'Written Off' || loan.status === 'Loss',
+                      'badge-completed': loan.status === 'Fully Paid',
                     })}>
                       {loan.status}
                     </span>
@@ -178,10 +178,10 @@ export default function RecentLoansTable({ recentLoans }: RecentLoansTableProps)
 
                     <div className="mt-3">
                       <span className={cn('badge', {
-                        'badge-success': loan.status === 'Active',
-                        'badge-pending': loan.status === 'Pending',
-                        'badge-error': loan.status === 'Overdue' || loan.status === 'Denied' || loan.status === 'Defaulted',
-                        'badge-completed': loan.status === 'Completed',
+                        'badge-success':   loan.status === 'Active',
+                        'badge-pending':   loan.status === 'Pending',
+                        'badge-error':     loan.status === 'Overdue' || loan.status === 'Denied' || loan.status === 'Written Off' || loan.status === 'Loss',
+                        'badge-completed': loan.status === 'Fully Paid',
                       })}>
                         {loan.status}
                       </span>

@@ -9,10 +9,12 @@ import {
   ClipboardList,
   Calendar,
   FileText,
+  Activity,
+  Users,
+  PieChart,
 } from "lucide-react";
 import ReportCard from "@/components/reports/ReportCard";
 import HeaderBox from "@/components/HeaderBox";
-import Link from "next/link";
 
 export default async function ReportsPage() {
   const user = await getLoggedInUser();
@@ -20,10 +22,10 @@ export default async function ReportsPage() {
     redirect("/");
   }
 
-  const adminReports = [
+  const liveReports = [
     {
       title: "Loan Portfolio",
-      description: "Total disbursed, outstanding balances, active/overdue/defaulted loan counts, and collection rate.",
+      description: "Total disbursed, outstanding balances, loan status breakdown, lifecycle states (Standard / Rollover / Restructured), and PAR indicators.",
       href: "/reports/portfolio",
       icon: BarChart2,
       badge: "Live",
@@ -31,7 +33,7 @@ export default async function ReportsPage() {
     },
     {
       title: "Collections Report",
-      description: "Expected vs actual repayment collections filtered by date range. Track collection efficiency.",
+      description: "Expected vs actual repayment collections filtered by date range. Track collection efficiency across all active loans.",
       href: "/reports/collections",
       icon: TrendingUp,
       badge: "Live",
@@ -39,7 +41,7 @@ export default async function ReportsPage() {
     },
     {
       title: "Arrears & Delinquency",
-      description: "Overdue loans categorized by aging buckets: 1–30, 31–60, 61–90, and 90+ days past due.",
+      description: "Overdue loans categorized by aging buckets: 1–30, 31–60, 61–90, and 90+ days past due. With client contact details.",
       href: "/reports/arrears",
       icon: AlertTriangle,
       badge: "Live",
@@ -54,23 +56,50 @@ export default async function ReportsPage() {
       badgeVariant: "success" as const,
     },
     {
-      title: "Penalty Report",
-      description: "Penalties charged, reversed, and outstanding with full detail by loan and date.",
+      title: "Penalty & Waiver Log",
+      description: "All manual penalties and waivers charged or reversed, filterable by date. Tracks total outstanding penalty exposure.",
       href: "/reports/penalties",
       icon: ShieldAlert,
     },
     {
       title: "Audit Log",
-      description: "Full activity trail — repayments, approvals, reversals, penalties. Paginated and searchable.",
+      description: "Full activity trail — repayments, approvals, reversals, penalties. Paginated and filterable by date.",
       href: "/reports/audit",
       icon: ClipboardList,
     },
   ];
 
-  const monthlyReports = [
+  const analyticsReports = [
     {
-      title: "Monthly Portfolio Report",
-      description: "Period-based immutable snapshots. Opening/closing balances, new loans, collections — exactly as recorded at month-end.",
+      title: "Income Statement",
+      description: "Interest collected, penalty revenue, and waivers. Shows net income per month — the MFI's profitability view.",
+      href: "/reports/income",
+      icon: Activity,
+      badge: "New",
+      badgeVariant: "success" as const,
+    },
+    {
+      title: "Portfolio At Risk (PAR)",
+      description: "Industry-standard MFI health metric. PAR30/60/90 rates, risk ladder, and full at-risk loan ledger. PAR30 should stay below 5%.",
+      href: "/reports/par",
+      icon: PieChart,
+      badge: "New",
+      badgeVariant: "success" as const,
+    },
+    {
+      title: "Loan Officer Performance",
+      description: "Origination counts, disbursements, collection rates, and overdue exposure — ranked by officer. Identify top performers and gaps.",
+      href: "/reports/officer",
+      icon: Users,
+      badge: "New",
+      badgeVariant: "success" as const,
+    },
+  ];
+
+  const periodReports = [
+    {
+      title: "Monthly Portfolio Snapshot",
+      description: "Immutable period-end snapshots. Opening/closing balances, new loans, collections — frozen at month-end and never modified.",
       href: "/reports/monthly",
       icon: Calendar,
       badge: "Snapshot",
@@ -78,7 +107,7 @@ export default async function ReportsPage() {
     },
     {
       title: "Loan Statement",
-      description: "Client-facing loan statement with full repayment history and running balance. Accessible from any loan.",
+      description: "Client-facing loan statement with full repayment history and running balance. Accessible directly from any loan.",
       href: "/loans",
       icon: FileText,
     },
@@ -89,45 +118,45 @@ export default async function ReportsPage() {
       <header className="page-header">
         <HeaderBox
           title="Reports"
-          subtext="Financial reports, portfolio analytics, and month-end snapshots."
+          subtext="Financial reports, portfolio analytics, and period snapshots."
         />
       </header>
 
-      {/* Admin / Business Reports */}
-      <div className="mb-2">
+      {/* Live Business Reports */}
+      <div className="mb-8">
         <h2 className="text-14 font-bold text-gray-500 uppercase tracking-widest mb-4">
-          Business Reports
+          Live Business Reports
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {adminReports.map((report) => (
+          {liveReports.map((report) => (
             <ReportCard key={report.href} {...report} />
           ))}
         </div>
       </div>
 
-      {/* Monthly + Client */}
-      <div className="mt-8">
+      {/* Analytics & Risk */}
+      <div className="mb-8">
+        <h2 className="text-14 font-bold text-gray-500 uppercase tracking-widest mb-4">
+          Analytics &amp; Risk
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {analyticsReports.map((report) => (
+            <ReportCard key={report.href} {...report} />
+          ))}
+        </div>
+      </div>
+
+      {/* Period-Based & Client */}
+      <div>
         <h2 className="text-14 font-bold text-gray-500 uppercase tracking-widest mb-4">
           Period-Based &amp; Client Reports
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {monthlyReports.map((report) => (
+          {periodReports.map((report) => (
             <ReportCard key={report.href} {...report} />
           ))}
         </div>
       </div>
-
-      {/* Coming soon notice */}
-      {/* <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3">
-        <span className="text-lg flex-shrink-0">🔮</span>
-        <div>
-          <p className="text-13 font-semibold text-amber-800">Coming Soon</p>
-          <p className="text-12 text-amber-700 mt-0.5">
-            Branch-level reports, loan officer performance, scheduled email delivery, and Excel/CSV export are planned for the next release.{" "}
-            <Link href="/reports/audit" className="underline">View audit log</Link> in the meantime.
-          </p>
-        </div>
-      </div> */}
     </section>
   );
 }

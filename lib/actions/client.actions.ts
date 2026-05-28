@@ -100,7 +100,19 @@ export const getClients = async () => {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return parseStringify(data.map(mapClientRow));
+
+    // Fetch overdue loans to determine which clients are in arrears
+    const { data: overdueLoans } = await supabase
+      .from("loans")
+      .select("client_id")
+      .eq("status", "Overdue");
+
+    const overdueClientIds = new Set(overdueLoans?.map((l) => l.client_id) || []);
+
+    return parseStringify(data.map((row) => ({
+      ...mapClientRow(row),
+      hasOverdueLoans: overdueClientIds.has(row.id),
+    })));
   } catch (error) {
     console.error("Error fetching clients", error);
     return null;

@@ -64,7 +64,7 @@ export default async function MonthlyReportDetailPage({
         <KpiCard label="New Loans"       value={report.totalNewLoans}       icon={<TrendingUp className="size-4" />}  variant="default" />
         <KpiCard label="Closed"          value={report.totalClosedLoans}    icon={<BarChart2 className="size-4" />}   variant="success" />
         <KpiCard label="Overdue"         value={report.totalOverdueLoans}   icon={<AlertCircle className="size-4" />} variant="danger" />
-        <KpiCard label="Defaulted"       value={report.totalDefaultedLoans} icon={<AlertCircle className="size-4" />} variant="danger" />
+        <KpiCard label="Written Off / Loss" value={report.totalDefaultedLoans} icon={<AlertCircle className="size-4" />} variant="danger" />
         <KpiCard
           label="Collection Rate"
           value={`${report.collectionRate}%`}
@@ -169,10 +169,10 @@ export default async function MonthlyReportDetailPage({
                     <td className="data-td text-right tabular-nums font-bold text-gray-900">{formatAmount(entry.closingBalance)}</td>
                     <td className="data-td">
                       <span className={cn("badge", {
-                        "badge-success": entry.loanStatus === "Active",
-                        "badge-error": entry.loanStatus === "Overdue" || entry.loanStatus === "Defaulted",
-                        "badge-completed": entry.loanStatus === "Completed",
-                        "badge-pending": entry.loanStatus === "Pending",
+                        "badge-success":   entry.loanStatus === "Active",
+                        "badge-error":     entry.loanStatus === "Overdue" || entry.loanStatus === "Written Off" || entry.loanStatus === "Loss",
+                        "badge-completed": entry.loanStatus === "Fully Paid",
+                        "badge-pending":   entry.loanStatus === "Pending",
                       })}>
                         {entry.loanStatus}
                       </span>

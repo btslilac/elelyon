@@ -13,21 +13,25 @@ interface PortfolioChartProps {
   data: {
     activeLoans: number;
     overdueLoans: number;
-    completedLoans: number;
-    defaultedLoans: number;
+    fullyPaidLoans: number;
+    writtenOffLoans: number;
+    lossLoans: number;
     pendingLoans: number;
+    deniedLoans: number;
   };
 }
 
-const COLORS = ["#22c55e", "#ef4444", "#6366f1", "#f59e0b", "#94a3b8"];
+const COLORS = ["#22c55e", "#f97316", "#6366f1", "#94a3b8", "#ef4444", "#d1d5db", "#1e3a5f"];
 
 export default function PortfolioChart({ data }: PortfolioChartProps) {
   const chartData = [
-    { name: "Active", value: data.activeLoans },
-    { name: "Overdue", value: data.overdueLoans },
-    { name: "Completed", value: data.completedLoans },
-    { name: "Defaulted", value: data.defaultedLoans },
-    { name: "Pending", value: data.pendingLoans },
+    { name: "Active",      value: data.activeLoans },
+    { name: "Overdue",     value: data.overdueLoans },
+    { name: "Fully Paid",  value: data.fullyPaidLoans },
+    { name: "Written Off", value: data.writtenOffLoans },
+    { name: "Loss",        value: data.lossLoans },
+    { name: "Pending",     value: data.pendingLoans },
+    { name: "Denied",      value: data.deniedLoans },
   ].filter((d) => d.value > 0);
 
   if (chartData.length === 0) {

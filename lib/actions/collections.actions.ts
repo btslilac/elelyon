@@ -96,10 +96,31 @@ export async function getNotifications(params: { clientId?: string; loanId?: str
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      // Fallback if the foreign key relationship is missing in the database schema (PostgREST Error PGRST200)
+      if (error.code === 'PGRST200') {
+        console.warn(
+          "[getNotifications] ⚠️ Database relationship between 'notifications' and 'clients' is missing. " +
+          "Falling back to basic notification query without joining client names. " +
+          "To fix this completely, please ensure you run the database migration to add the foreign key constraint."
+        );
+        
+        let fallbackQuery = supabase.from('notifications').select('*').order('created_at', { ascending: false });
+        if (params.loanId) {
+          fallbackQuery = fallbackQuery.eq('loan_id', params.loanId);
+        } else if (params.clientId) {
+          fallbackQuery = fallbackQuery.eq('client_id', params.clientId);
+        }
+        
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+        if (fallbackError) throw fallbackError;
+        return fallbackData || [];
+      }
+      throw error;
+    }
     return data || [];
-  } catch (error) {
-    console.error("[getNotifications] Error:", error);
+  } catch (error: any) {
+    console.error("[getNotifications] Error:", error.message || error);
     return [];
   }
 }
